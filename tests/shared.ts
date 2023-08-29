@@ -11,5 +11,6 @@ export const login = async (page: Page) => {
 	await page.locator('#UserName').fill(user);
 	await page.locator('#Password').fill(password);
 	await page.locator('input[type=submit]').click();
+	await page.waitForURL(`${host}/`); // wait for redirect
 	await expect(page.url()).toBe(`${host}/`); // check if login was successful
 };
