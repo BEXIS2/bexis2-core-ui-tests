@@ -10,7 +10,6 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    environment: test
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
@@ -23,9 +22,9 @@ jobs:
     - name: Create env file
       run: |
         touch .env
-        echo HOST=${{ vars.HOST }} >> .env
-        echo USER=${{ vars.USER }} >> .env
-        echo PW=${{ vars.PW }} >> .env
+        echo HOST=${{ secrets.HOST }} >> .env
+        echo ACCOUNT_USERNAME=${{ secrets.ACCOUNT_USERNAME }} >> .env
+        echo ACCOUNT_PASSWORD=${{ secrets.ACCOUNT_PASSWORD }} >> .env
         cat .env
     - name: Run Playwright tests
       run: npx playwright test
