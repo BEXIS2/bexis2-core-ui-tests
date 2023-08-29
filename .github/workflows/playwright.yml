@@ -20,6 +20,8 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Create env file
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         touch .env
         echo HOST=${{ secrets.HOST }} >> .env
