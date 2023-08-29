@@ -10,8 +10,6 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    env:
-        GITHUB_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
@@ -26,7 +24,7 @@ jobs:
         touch .env
         echo HOST=${{ secrets.HOST }} >> .env
         echo USER=${{ secrets.USER }} >> .env
-        echo PASSWORD=${{ secrets.PASSWORD }} >> .env
+        echo PW=${{ secrets.PW }} >> .env
         cat .env
     - name: Run Playwright tests
       run: npx playwright test

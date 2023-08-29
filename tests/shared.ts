@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 export const host = process.env.HOST;
 
 const user = process.env.USER as string;
-const password = process.env.PASSWORD as string;
+const password = process.env.PW as string;
 
 export const login = async (page: Page) => {
 	await page.goto(`${host}/Account/Login`);
