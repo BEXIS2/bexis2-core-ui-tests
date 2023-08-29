@@ -10,6 +10,8 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    env:
+        GITHUB_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
@@ -20,8 +22,6 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Create env file
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
       run: |
         touch .env
         echo HOST=${{ secrets.HOST }} >> .env
