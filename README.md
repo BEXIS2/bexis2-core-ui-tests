@@ -6,8 +6,8 @@ Create a `.env` file in the root folder of the project for your user credentials
 Here's an example `.env` file contents:
 ```bash
 export HOST="https://localhost:4173"
-export USER="user"
-export PASSWORD="user"
+export ACCOUNT_USERNAME="user"
+export ACCOUNT_PASSWORD="user"
 ```
 ### Using shared variables
 Importing shared functions from `shared.ts`:
