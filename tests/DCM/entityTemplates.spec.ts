@@ -116,4 +116,33 @@ test.describe('Entity Templates', () => {
       );
     });
   });
+
+  test.describe('Delete the edited Entity Template', () => {
+    test('Delete and verify', async () => {
+      const card = await page.locator('.card', {
+        has: page.locator('header h2:has-text("Test")'),
+      });
+
+      // Click delete
+      await card.locator('button[title=delete]').click();
+
+      // Wait until the modal appears
+      await page.waitForSelector('.modal');
+
+      // Check the modal title
+      await expect(page.locator('.modal-header')).toHaveText('Please Confirm');
+      await expect(page.locator('.modal-body')).toHaveText(
+        'Are you sure you wish to remove?'
+      );
+
+      // Click Confirm
+      await page
+        .locator('.modal-footer')
+        .locator('button.variant-filled')
+        .click();
+
+			// Verify the entity template is deleted
+			await expect(card).not.toBeVisible();
+    });
+  });
 });
