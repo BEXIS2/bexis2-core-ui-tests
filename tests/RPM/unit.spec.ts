@@ -1,11 +1,12 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect} from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 import { login, host } from '../shared';
 
 // Annotate entire file as serial.
 test.describe.configure({ mode: 'serial' });
 
-test.describe('RPM Unit', () => {
+test.describe('Unit', () => {
   // Declare page outside of the test hooks so it's accessible by all tests.
   let page: Page;
 
@@ -99,7 +100,7 @@ test.describe('RPM Unit', () => {
 
   test.describe('Edit the new Unit', () => {
     test('Title', async () => {
-      await page.getByTitle(`Edit Unit, ${unit}`).click(); // Click on the edit button
+      await page.locator('[id^=edit-]').click(); // Click on the edit button
 
       const title = await page
         .locator('.w-full', { has: page.locator('.table.table-compact') })
@@ -171,7 +172,7 @@ test.describe('RPM Unit', () => {
 
   test.describe('Delete the new Unit', () => {
     test('Delete the unit', async () => {
-      await page.getByTitle(`Delete Unit, ${unit}`).click(); // Click on the delete button
+      await page.locator('[id^=delete-]').click(); // Click on the delete button
 
       // Wait until the modal appears
       await page.waitForSelector('.modal');

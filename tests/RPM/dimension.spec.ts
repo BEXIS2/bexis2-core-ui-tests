@@ -1,11 +1,12 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 import { login, host } from '../shared';
 
 // Annotate entire file as serial.
 test.describe.configure({ mode: 'serial' });
 
-test.describe('RPM Dimension', () => {
+test.describe('Dimension', () => {
   // Declare page outside of the test hooks so it's accessible by all tests.
   let page: Page;
 
@@ -60,19 +61,19 @@ test.describe('RPM Dimension', () => {
 
     test('Find the new dimension in the table', async () => {
       // Search for the new dimension
-      await page.locator('#Units-search').fill(dimension);
+      await page.locator('#dimensions-search').fill(dimension);
       // Get the row
-      const row = page.locator('[id^=Units-row-]');
+      const row = page.locator('[id^=dimensions-row-]');
       await expect(row).toHaveCount(1);
       // Get the index of the dimension
       const id = (await row.getAttribute('id')) as string;
       const index = id.split('-')[2];
       // Check the values
-      await expect(page.locator(`#Units-name-${index}`)).toHaveText(dimension);
-      await expect(page.locator(`#Units-description-${index}`)).toHaveText(
+      await expect(page.locator(`#dimensions-name-${index}`)).toHaveText(dimension);
+      await expect(page.locator(`#dimensions-description-${index}`)).toHaveText(
         'Test dimension'
       );
-      await expect(page.locator(`#Units-specification-${index}`)).toHaveText(
+      await expect(page.locator(`#dimensions-specification-${index}`)).toHaveText(
         'L(0,0)M(0,0)T(0,0)I(0,0)Θ(0,0)N(0,0)J(0,1)'
       );
     });
@@ -81,7 +82,7 @@ test.describe('RPM Dimension', () => {
   test.describe('Edit new Dimension', () => {
     // Check the title
     test('Title', async () => {
-      await page.getByTitle(`Edit Unit, ${dimension}`).click(); // Click on the edit button
+      await page.locator('[id^=edit-]').click(); // Click on the edit button
 
       const title = await page
         .locator('.w-full', { has: page.locator('.table.table-compact') })
@@ -113,19 +114,19 @@ test.describe('RPM Dimension', () => {
 
     test('Find the edited dimension in the table', async () => {
       // Search for the dimension
-      await page.locator('#Units-search').fill(dimension);
+      await page.locator('#dimensions-search').fill(dimension);
       // Get the row
-      const row = page.locator('[id^=Units-row-]');
+      const row = page.locator('[id^=dimensions-row-]');
       await expect(row).toHaveCount(1);
       // Get the index of the dimension
       const id = (await row.getAttribute('id')) as string;
       const index = id.split('-')[2];
       // Check the values
-      await expect(page.locator(`#Units-name-${index}`)).toHaveText(dimension);
-      await expect(page.locator(`#Units-description-${index}`)).toHaveText(
+      await expect(page.locator(`#dimensions-name-${index}`)).toHaveText(dimension);
+      await expect(page.locator(`#dimensions-description-${index}`)).toHaveText(
         'Test dimension edited'
       );
-      await expect(page.locator(`#Units-specification-${index}`)).toHaveText(
+      await expect(page.locator(`#dimensions-specification-${index}`)).toHaveText(
         'L(0,0)M(0,0)T(0,0)I(0,0)Θ(0,0)N(0,0)J(0,1)'
       );
     });
@@ -134,7 +135,7 @@ test.describe('RPM Dimension', () => {
   test.describe('Delete new Dimension', () => {
     test('Delete Dimension', async () => {
       // Click on the delete button
-      await page.getByTitle(`Delete Unit, ${dimension}`).click();
+      await page.locator('[id^=delete-]').click();
 
       // Wait until the modal appears
       await page.waitForSelector('.modal');
