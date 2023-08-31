@@ -117,10 +117,146 @@ test.describe('Entity Templates', () => {
     });
   });
 
+  test.describe('Edit the Entity Template', () => {
+    test('Edit the essentials', async () => {
+      const card = await page.locator('.card', {
+        has: page.locator('header h2:has-text("Test")'),
+      });
+
+      // Click edit
+      await card.locator('button[title=edit]').click();
+
+      // Change the name
+      await page.locator('#name').fill('Test Edited');
+
+      // Change the description
+      await page.locator('#description').fill('Test description edited');
+    });
+
+    test('Edit Metadata', async () => {
+      // Choose the metadata structure
+      await page.locator('#metadataStructure').selectOption('2');
+
+      // Clear the required fields
+      await expect(
+        page.locator('#metadataFields-container .multi-item .multi-item-clear')
+      ).toHaveCount(2);
+      await page
+        .locator('#metadataFields-container .multi-item .multi-item-clear')
+        .first()
+        .click();
+      await page
+        .locator('#metadataFields-container .multi-item .multi-item-clear')
+        .click();
+
+      // Choose required fields
+      await page
+        .locator('#metadataFields-container .svelte-select.multi')
+        .click();
+      await page
+        .locator(
+          '#metadataFields-container .list-item .item:has-text("Author")'
+        )
+        .click();
+      await page
+        .locator('#metadataFields-container .svelte-select.multi')
+        .click();
+      await page
+        .locator('#metadataFields-container .list-item .item:text-is("Title")')
+        .click();
+    });
+
+    test('Edit Dataset Settings', async () => {
+      // Clear the dataset components to be disabled
+      await expect(
+        page.locator('#disabledHooks-container .multi-item .multi-item-clear')
+      ).toHaveCount(2);
+      await page
+        .locator('#disabledHooks-container .multi-item .multi-item-clear')
+        .first()
+        .click();
+      await page
+        .locator('#disabledHooks-container .multi-item .multi-item-clear')
+        .click();
+
+      // Choose dataset components to be disabled
+      await page
+        .locator('#disabledHooks-container .svelte-select.multi')
+        .click();
+      await page
+        .locator(
+          '#disabledHooks-container .list-item .item:has-text("Metadata")'
+        )
+        .click();
+      await page
+        .locator('#disabledHooks-container .svelte-select.multi')
+        .click();
+      await page
+        .locator(
+          '#disabledHooks-container .list-item .item:has-text("Validation")'
+        )
+        .click();
+
+      // Clear the allowed file types for file upload
+      await expect(
+        page.locator(
+          '#allowedFileTypes-container .multi-item .multi-item-clear'
+        )
+      ).toHaveCount(2);
+      await page
+        .locator('#allowedFileTypes-container .multi-item .multi-item-clear')
+        .first()
+        .click();
+      await page
+        .locator('#allowedFileTypes-container .multi-item .multi-item-clear')
+        .click();
+
+      // Choose allowed file types for file upload
+      await page
+        .locator('#allowedFileTypes-container .svelte-select.multi')
+        .click();
+      await page
+        .locator(
+          '#allowedFileTypes-container .list-item .item:has-text(".csv")'
+        )
+        .click();
+      await page
+        .locator('#allowedFileTypes-container .svelte-select.multi')
+        .click();
+      await page
+        .locator(
+          '#allowedFileTypes-container .list-item .item:has-text(".dbf")'
+        )
+        .click();
+    });
+
+    test('Save and verify the edited entity template', async () => {
+      // Click save
+      await page.locator('button[title=save]').click();
+
+      // Verify entity's existence and contents
+      const card = await page.locator('.card', {
+        has: page.locator('header h2:has-text("Test edited")'),
+      });
+      await expect(
+        card.locator('header .badge.variant-filled-surface')
+      ).toHaveText('GBIF');
+      await expect(
+        card.locator('header .badge.variant-filled-secondary')
+      ).toHaveText('Dataset');
+      await expect(card.locator('blockquote')).toHaveText(
+        'Test description edited'
+      );
+      await expect(card.locator('i')).toHaveText(
+        'Restricted to these file types: .csv, .dbf'
+      );
+    });
+  });
+
   test.describe('Delete the edited Entity Template', () => {
     test('Delete and verify', async () => {
       const card = await page.locator('.card', {
-        has: page.locator('header h2:has-text("Test")'),
+        has: page.locator('header h2:has-text("Test edited")'),
       });
 
       // Click delete
@@ -141,8 +277,8 @@ test.describe('Entity Templates', () => {
         .locator('button.variant-filled')
         .click();
 
-			// Verify the entity template is deleted
-			await expect(card).not.toBeVisible();
+      // Verify the entity template is deleted
+      await expect(card).not.toBeVisible();
     });
   });
 });
