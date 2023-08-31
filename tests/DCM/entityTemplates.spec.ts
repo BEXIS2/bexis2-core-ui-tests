@@ -36,8 +36,10 @@ test.describe('Entity Templates', () => {
 
     test('Fill in Metadata', async () => {
       // Choose the metadata structure
-      await page.locator('#metadataStructure').selectOption('2');
       await page.locator('#metadataStructure').selectOption('1');
+      await page
+        .locator('#metadataStructure')
+        .dispatchEvent('change');
 
       // Choose required fields
       await page
