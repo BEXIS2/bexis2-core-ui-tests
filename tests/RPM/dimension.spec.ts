@@ -60,7 +60,6 @@ test.describe('Dimensions', () => {
             await checkAndCloseToast(page, dimension);
         });
 
-
     });
     test.describe('Edit new dimension', () => {
         const dimension = `test_edit-${+Date.now()}`;
