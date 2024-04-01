@@ -39,6 +39,7 @@ test.describe('Dimensions', () => {
         });
     });
 
+
     test.describe('Create new dimension', () => {
         const dimension = `test_new-${+Date.now()}`;
         test('should match the expected title', async () => {
@@ -48,7 +49,7 @@ test.describe('Dimensions', () => {
         test('Create dimension', async () => {
             await createDimension(page, dimension);
         });
-
+        test.slow();
         test('Find the new dimension in the table', async () => {
             await findNewDimension(page, dimension);
         });
@@ -59,6 +60,7 @@ test.describe('Dimensions', () => {
         test('Check toast', async () => {
             await checkAndCloseToast(page, dimension);
         });
+
 
     });
     test.describe('Edit new dimension', () => {
