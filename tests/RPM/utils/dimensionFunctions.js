@@ -60,6 +60,7 @@ async function checkDimension(page, dName, hasSpecification, hasDescription) {
 }
 async function createDimension(page, dimension) {
 
+
     await page.locator('#create').click();
     await page.locator('input[id=name]').fill(dimension);
     await page
@@ -79,10 +80,14 @@ async function createDimension(page, dimension) {
     await toast.locator('button').click(); // Close the toast
 }
 async function findNewDimension(page, dimension) {
+    await page.reload()
+    await page.waitForLoadState('load');
 
     // Search for the new dimension
     await page.locator('#dimensions-search').fill(dimension);
 
+    // Wait for 1000 milliseconds
+    await page.waitForTimeout(1000);
     // Click on the Search button
     await page.click('.table-container > div:nth-child(1) > button:nth-child(2)');
 
