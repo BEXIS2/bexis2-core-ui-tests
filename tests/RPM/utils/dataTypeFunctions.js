@@ -106,6 +106,9 @@ async function findDataType(page, dataType) {
     // Search for the data type
     await page.locator('#dataTypes-search').fill(dataType);
 
+    // Click on the Search button
+    await page.click('.table-container > div:nth-child(1) > button:nth-child(2)');
+
     // Get the row
     const row = page.locator('[id^=dataTypes-row-]');
     await expect(row).toHaveCount(1);
