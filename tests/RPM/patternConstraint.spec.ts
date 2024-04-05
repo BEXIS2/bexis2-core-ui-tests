@@ -27,7 +27,8 @@ test.describe('Pattern Constraint', () => {
     //         await checkAndCloseToast(expect, page, constraint);
     //     }
 
-    // });
+   // });
+   test.slow()
     test.describe('Iterations for fields validation', () => {
         const constraint = `test_iterate-${+Date.now()}`;
         test('Check title ', async () => {
@@ -54,14 +55,15 @@ test.describe('Pattern Constraint', () => {
         });
 
     });
-
+    test.slow()
     test.describe('Create Pattern Constraints', () => {
         const constraint = `test_new-${+Date.now()}`;
 
         test('should match the expected title', async () => {
             await checkTitle(page, 'Constraints', '.w-full >> .table.table-compact', 'h1.h1');
         });
-
+       
+        test.slow()
         test('Create Pattern Constraint', async () => {
             await createPatternConstraint(page, constraint);
         });
@@ -78,14 +80,14 @@ test.describe('Pattern Constraint', () => {
         });
 
     });
-
+    test.slow();
     test.describe('Edit new constraint', () => {
         const constraint = `test_edit-${+Date.now()}`;
 
         test('should match the expected title', async () => {
             await checkTitle(page, 'Constraints', '.w-full >> .table.table-compact', 'h1.h1');
         });
-
+        test.slow();
         test('Create Pattern Constraint', async () => {
             await createPatternConstraint(page, constraint);
         });
@@ -103,6 +105,7 @@ test.describe('Pattern Constraint', () => {
                 .locator('div.h3');
             await expect(title).toHaveText(constraint);
         });
+        test.slow();
         test('Edit description pattern', async () => {
             await editPatternDescription(page, constraint);
         });
