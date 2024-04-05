@@ -111,7 +111,7 @@ async function checkPatternConstraint(page, constraint, hasDescription, hasPatte
 }
 
 async function createPatternConstraint(page, constraint) {
-
+    await page.reload()
     await page.waitForLoadState('load');
     // Click on the create button
     await page.locator('#create').click();
@@ -166,9 +166,12 @@ async function findPatternConstraint(page, constraint) {
 }
 
 async function editPatternDescription(page, constraint) {
+    await page.waitForLoadState('load');
     await page
         .locator('textarea[id=description]')
         .fill('Test constraint edited');
+         // Wait for 500 milliseconds
+    await page.waitForTimeout(500);
     await page.locator('input[id=name]').fill(constraint);
     await page.locator('textarea[id=description]').fill('Test edited pattern constraint');
     // Click on the div to focus
