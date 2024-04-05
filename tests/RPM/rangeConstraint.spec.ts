@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 const { checkTitle, checkAndCloseToast, deleteConstraint } = require('./utils/uniqueFunction');
 const { findRangeConstraint, checkRangeConstraint, createRangeConstraint, findEditedRangeConstraint, editRangeDescription } = require('./utils/rangeFunctions');
-
 import { login, host } from '../shared';
 
 // Annotate entire file as serial.
@@ -27,6 +26,7 @@ test.describe('Range Constraint', () => {
     //         await checkAndCloseToast(expect, page, constraint);
     //     }
     // });
+   test.slow();
     test.describe('Iterations for fields validation', () => {
         const constraint = `test_iterate-${+Date.now()}`;
         test('Check title ', async () => {
@@ -53,41 +53,38 @@ test.describe('Range Constraint', () => {
         });
 
     });
-
-
-
+    test.slow();
     test.describe('Create Range Constraint', () => {
         const constraint = `test_new-${+Date.now()}`;
 
         test('should match the expected title', async () => {
             await checkTitle(page, 'Constraints', '.w-full >> .table.table-compact', 'h1.h1');
         });
-
-
+        test.slow();
         test('Create Range Constraint', async () => {
             await createRangeConstraint(page, constraint);
         });
         test('Find the new constraint in the table', async () => {
             await findRangeConstraint(page, constraint);
         });
-
+     
         test('Delete new constraint', async () => {
             await deleteConstraint(page, constraint);
         });
-
+        
         test('Check toast', async () => {
             await checkAndCloseToast(page, constraint);
         });
 
     });
 
-
+    test.slow();
     test.describe('Edit new constraint', () => {
         const constraint = `test_edit-${+Date.now()}`;
         test('should match the expected title', async () => {
             await checkTitle(page, 'Constraints', '.w-full >> .table.table-compact', 'h1.h1');
         });
-
+        
         test('Create Range Constraint', async () => {
             await createRangeConstraint(page, constraint);
         });
@@ -105,6 +102,7 @@ test.describe('Range Constraint', () => {
                 .locator('div.h3');
             await expect(title).toHaveText(constraint);
         });
+        test.slow();
         test('Edit description pattern', async () => {
             await editRangeDescription(page, constraint);
         });
@@ -112,10 +110,11 @@ test.describe('Range Constraint', () => {
         test('Find the edited constraint in the table', async () => {
             await findEditedRangeConstraint(page, constraint);
         });
+      
         test('Delete new constraint', async () => {
             await deleteConstraint(page, constraint);
         });
-
+        
         test('Check toast', async () => {
             await checkAndCloseToast(page, constraint);
         });
