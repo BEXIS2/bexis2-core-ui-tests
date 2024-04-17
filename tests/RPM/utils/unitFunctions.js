@@ -165,8 +165,15 @@ async function createUnit(page, unit) {
 }
 
 async function findNewUnit(page, unit) {
+    await page.waitForLoadState('load');
+    // Wait for 500 milliseconds
+    await page.waitForTimeout(1000);
     // Search for the new unit
     await page.locator('#Units-search').fill(unit);
+    // Wait for 1000 milliseconds
+    await page.waitForTimeout(1000);
+    // Click on the Search button
+    await page.click('form.flex > button:nth-child(2)');
     // Locate the correct row
     const row = page.locator('[id^=Units-row-]');
     await expect(row).toHaveCount(1);
@@ -233,11 +240,20 @@ async function deleteUnit(page, unit) {
 }
 
 async function editUnitDescription(page, unit) {
+    // Wait for 500 milliseconds
+    await page.waitForTimeout(500);
+    await page.locator('input[id=name]').fill(unit);
+    // Fill in Abbreviation
+    await page.locator('input[id=abbreviation]').fill(unit);
 
     await page
         .locator('textarea[id=description]')
         .fill('Test unit edited');
-    await page.locator('input[id=name]').fill(unit);
+
+
+    // Select Measurement System
+    await page.locator('.radio-item:has-text("Metric")').click();
+
     await page.locator('button[id=save]').click();
 
     // Wait until the toast appears
@@ -280,8 +296,6 @@ async function findEditedUnit(page, unit) {
     ).toHaveText('Unknown');
 
 }
-
-
 
 module.exports = {
     checkUnits,
