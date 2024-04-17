@@ -24,15 +24,13 @@ test.describe('Unit', () => {
     await page.close(); // Close the page after all tests
   });
 
-  // Unique name for the unit
+ // Unique name for the unit
   test.describe('Iterations for fields validation', () => {
     const unitIterate = `test_iterate-${+Date.now()}`;
     test('Check title ', async () => {
       //Check with title name
       await checkTitle(page, 'Units', '.w-full >> .table.table-compact', 'h1.h1');
     });
-
-
 
 
     test('Check with name field , Abbreviation description', async () => {
@@ -61,8 +59,8 @@ test.describe('Unit', () => {
       await checkUnits(page, unitIterate, "TU", "Test Unit", "String", "", "Unknown")
     });
 
-
   });
+  
   test.describe('Create new unit', () => {
     const unit = `test_new-${+Date.now()}`;
     test('should match the expected title', async () => {
@@ -109,6 +107,7 @@ test.describe('Unit', () => {
         .locator('div.h3');
       await expect(title).toHaveText(unit);
     });
+    test.slow()
     test('Edit description unit', async () => {
       test.slow();
       await editUnitDescription(page, unit);
@@ -126,6 +125,5 @@ test.describe('Unit', () => {
       await checkAndCloseToast(page, unit);
     });
   });
-
-
 });
+
