@@ -41,8 +41,6 @@ test.describe('Prefix Category', () => {
       await findPrefix (page,prefixIterate)
       await deletePrefix(page)
     });
-
-  
   });
 
   test.describe('Create new Prefix Category', () => {
