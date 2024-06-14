@@ -40,6 +40,8 @@ async function deleteConstraint(page, constraint) {
     await page.waitForTimeout(500);
     // Search for the constraint
     await page.locator('#constraints-search').fill(constraint);
+    // Click on the Search button
+    await page.click('#constraints-searchSubmit');
     // Click on the delete button
     await page.locator('[id^=delete-]').click();
 

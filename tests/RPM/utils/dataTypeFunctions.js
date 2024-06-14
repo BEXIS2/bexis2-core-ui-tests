@@ -107,7 +107,7 @@ async function findDataType(page, dataType) {
     await page.locator('#dataTypes-search').fill(dataType);
 
     // Click on the Search button
-    await page.click('.table-container > div:nth-child(1) > button:nth-child(2)');
+    await page.click('#dataTypes-searchSubmit');
 
     // Get the row
     const row = page.locator('[id^=dataTypes-row-]');
@@ -183,6 +183,8 @@ async function findEditedDataType(page, dataType) {
 
     // Search for the data type
     await page.locator('#dataTypes-search').fill(dataType);
+    // Click on the Search button
+    await page.click('#dataTypes-searchSubmit');
     // Get the row
     const row = page.locator('[id^=dataTypes-row-]');
     await expect(row).toHaveCount(1);

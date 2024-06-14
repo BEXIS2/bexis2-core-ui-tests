@@ -146,6 +146,8 @@ async function createRangeConstraint(page, constraint) {
 async function findRangeConstraint(page, constraint) {
     // Search for the constraint
     await page.locator('#constraints-search').fill(constraint);
+    // Click on the Search button
+    await page.click('#constraints-searchSubmit');
     // Get the row
     const row = page.locator('[id^=constraints-row-]');
     await expect(row).toHaveCount(1);
@@ -165,7 +167,7 @@ async function editRangeDescription(page, constraint) {
     await page.waitForLoadState('load');
     await page
         .locator('textarea[id=description]')
-        .fill('Test constraint edited');
+        .fill('Test constraint');
         // Wait for 500 milliseconds
     await page.waitForTimeout(500);
     await page.locator('input[id=name]').fill(constraint);
@@ -194,6 +196,8 @@ async function findEditedRangeConstraint(page, constraint) {
 
     // Search for the constraint
     await page.locator('#constraints-search').fill(constraint);
+    // Click on the Search button
+    await page.click('#constraints-searchSubmit');
     // Get the row
     const row = page.locator('[id^=constraints-row-]');
     await expect(row).toHaveCount(1);
@@ -203,7 +207,7 @@ async function findEditedRangeConstraint(page, constraint) {
     // Check the values
     await expect(page.locator(`#constraints-name-${index}`)).toHaveText(constraint);
     await expect(page.locator(`#constraints-description-${index}`)).toHaveText(
-        'Test constraint edited'
+        'Test constraint'
     );
     await expect(page.locator(`#constraints-formalDescription-${index}`)).toHaveText(
         'The value must be between 5 (including) and 10 (including).');
@@ -218,4 +222,3 @@ module.exports = {
     editRangeDescription,
     findEditedRangeConstraint
 };
-

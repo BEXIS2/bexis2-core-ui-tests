@@ -89,8 +89,7 @@ async function findNewDimension(page, dimension) {
     // Wait for 1000 milliseconds
     await page.waitForTimeout(1000);
     // Click on the Search button
-    await page.click('.table-container > div:nth-child(1) > button:nth-child(2)');
-
+    await page.click('#dimensions-searchSubmit');
     // Wait for 500 milliseconds
     await page.waitForTimeout(500);
     const row = page.locator('[id^=dimensions-row-]');
@@ -169,6 +168,8 @@ async function editDimensionDes(page, dimension) {
 async function findEditedDimension(page, dimension) {
     // Search for the dimension
     await page.locator('#dimensions-search').fill(dimension);
+    // Click on the Search button
+    await page.click('#dimensions-searchSubmit');
     // Get the row
     const row = page.locator('[id^=dimensions-row-]');
     await expect(row).toHaveCount(1);

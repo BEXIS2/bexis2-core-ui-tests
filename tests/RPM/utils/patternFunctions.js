@@ -128,7 +128,7 @@ async function createPatternConstraint(page, constraint) {
     await page.click('div.cm-activeLine.cm-line');
     // Type the text
     await page.keyboard.type('Hello Pattern');
-    // Click on example and type test data 
+    // Click on example and type test data
     await page.click('#example');
     await page.type('#example', 'Hello, I am Tester');
     await page.waitForTimeout(500); // waits for 500 milliseconds
@@ -147,6 +147,8 @@ async function createPatternConstraint(page, constraint) {
 async function findPatternConstraint(page, constraint) {
     // Search for the constraint
     await page.locator('#constraints-search').fill(constraint);
+    // Click on the Search button
+    await page.click('#constraints-searchSubmit');
     // Get the row
     const row = page.locator('[id^=constraints-row-]');
     await expect(row).toHaveCount(1);
@@ -197,6 +199,8 @@ async function findEditedPatternConstraint(page, constraint) {
 
     // Search for the constraint
     await page.locator('#constraints-search').fill(constraint);
+    // Click on the Search button
+    await page.click('#constraints-searchSubmit');
     // Get the row
     const row = page.locator('[id^=constraints-row-]');
     await expect(row).toHaveCount(1);
@@ -221,4 +225,3 @@ module.exports = {
     editPatternDescription,
     findEditedPatternConstraint
 };
-

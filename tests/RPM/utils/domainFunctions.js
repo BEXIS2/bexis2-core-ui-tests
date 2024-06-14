@@ -157,7 +157,8 @@ async function createDomainConstraint(page, constraint) {
 async function findDomainConstraint(page, constraint) {
     // Search for the constraint
     await page.locator('#constraints-search').fill(constraint);
-
+    // Click on the Search button
+    await page.click('#constraints-searchSubmit');
     // Get the row
     const row = page.locator('[id^=constraints-row-]');
     await expect(row).toHaveCount(1);
@@ -210,7 +211,8 @@ async function findEditedDomainConstraint(page, constraint) {
 
     // Search for the constraint
     await page.locator('#constraints-search').fill(constraint);
-
+    // Click on the Search button
+    await page.click('#constraints-searchSubmit');
     // Get the row
     const row = page.locator('[id^=constraints-row-]');
     await expect(row).toHaveCount(1);
