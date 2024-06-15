@@ -49,17 +49,17 @@ async function checkPatternConstraint(page, constraint, hasDescription, hasPatte
     }
 
     // Handling different conditions based on parameters
-    if (!constraint && !hasDescription && hasPatternType) {
+    if (!constraint && !hasDescription && hasPatternType && !hasExpInput) {
         await page.waitForLoadState('load');
         await page.waitForTimeout(1500);
         // Check if the save button is disabled and reload the page
         const saveButton = page.locator('button#save');
         await expect(saveButton).toBeDisabled();
-        await page.reload()
+        await page.reload();
         // Set the value
         handler.constraintDelete = true;
     }
-    else if (constraint && !hasDescription && hasPatternType) {
+    else if (constraint && !hasDescription && hasPatternType && !hasExpInput) {
         await page.waitForLoadState('load');
         await page.waitForTimeout(1500);
         // Check if the save button is disabled and reload the page
@@ -79,7 +79,7 @@ async function checkPatternConstraint(page, constraint, hasDescription, hasPatte
         // Set the value
         handler.constraintDelete = true;
     }
-    else if (constraint && hasDescription && hasPatternType) {
+    else if (constraint && hasDescription && hasPatternType && !hasExpInput) {
         await page.waitForLoadState('load');
         await page.waitForTimeout(1500);
         // Click on save button and wait for toast message
@@ -101,12 +101,18 @@ async function checkPatternConstraint(page, constraint, hasDescription, hasPatte
     else if (!constraint && !hasDescription && hasPatternType && hasExpInput) {
         await page.waitForLoadState('load');
         await page.waitForTimeout(1500);
-        // Check if the save button is disabled and reload the page
-        const saveButton = page.locator('button#save');
-        await expect(saveButton).toBeDisabled();
-        await page.reload();
+        // Click on save button and wait for toast message
+        await page.click('#save');
         // Set the value
+        await page.waitForSelector('.toast[data-testid=toast] .text-base');
+        const toast = await page.locator('.toast[data-testid=toast]');
+        let expectedMessage = "Can't save Constraint \"null\" .Name is Null or Empty";
+
+        await expect(await toast.locator('.text-base')).toHaveText(expectedMessage);
+        await toast.locator('button').click(); // Close the toast
         handler.constraintDelete = true;
+        await page.reload();
+
     }
 }
 
@@ -172,7 +178,7 @@ async function editPatternDescription(page, constraint) {
     await page
         .locator('textarea[id=description]')
         .fill('Test constraint edited');
-         // Wait for 500 milliseconds
+    // Wait for 500 milliseconds
     await page.waitForTimeout(500);
     await page.locator('input[id=name]').fill(constraint);
     await page.locator('textarea[id=description]').fill('Test edited pattern constraint');
