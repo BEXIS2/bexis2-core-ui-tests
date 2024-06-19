@@ -99,14 +99,9 @@ async function checkRangeConstraint(page, constraint, hasDescription, hasRangeTy
     else if (!constraint && !hasDescription && hasRangeType && hasLowerBoundValue && hasUpperBoundValue) {
         await page.waitForLoadState('load');
         await page.waitForTimeout(1000);
-        // Check if the save button is enable and reload the page
-        const saveButton = page.locator('button#save').click();
-        await page.waitForSelector('.toast[data-testid=toast] .text-base');
-        const toast = await page.locator('.toast[data-testid=toast]');
-
-        let expectedMessage = `Can't save Constraint "null" .Name is Null or Empty`;
-        await expect(await toast.locator('.text-base')).toHaveText(expectedMessage);
-        await toast.locator('button').click(); // Close the toast
+        // Check if the save button is disabled and reload the page
+        const saveButton = page.locator('button#save');
+        await expect(saveButton).toBeDisabled();
         await page.reload();
     }
 }
@@ -168,7 +163,7 @@ async function editRangeDescription(page, constraint) {
     await page
         .locator('textarea[id=description]')
         .fill('Test constraint');
-        // Wait for 500 milliseconds
+    // Wait for 500 milliseconds
     await page.waitForTimeout(500);
     await page.locator('input[id=name]').fill(constraint);
 
