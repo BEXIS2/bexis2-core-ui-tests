@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 import { login, host } from '../shared';
 const { checkTitle } = require('./utils/uniqueFunction');
 
-const { checkVariables, createVariable, findVariable, deleteVariable, editVariable } = require('./utils/variableFunctions');
+const { checkVariables, createVariable, findVariable, deleteVariable, editVariable, findEditedVariable } = require('./utils/variableFunctions');
 
 
 // Annotate entire file as serial.
@@ -121,10 +121,17 @@ test.describe('Variable', () => {
       await findVariable(page, variable)
     });
 
-    // test('Edit variable', async () => {
-    //   test.slow();
-    //   await editVariable(page, variable);
-    // });
+    test('Edit variable', async () => {
+      test.slow();
+      await editVariable(page, variable);
+    });
+
+    test('Find the edited variable in the table', async () => {
+      await findEditedVariable(page, variable)
+    });
+    test('Delete edited variable', async () => {
+      await deleteVariable(page);
+    });
   });
 });
 
