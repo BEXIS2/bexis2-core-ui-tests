@@ -277,7 +277,7 @@ async function editVariable(page) {
     await page.waitForSelector('.toast[data-testid=toast] .text-base');
     const toast = await page.locator('.toast[data-testid=toast]');
 
-    let expectedMessage = 'Variable Template created.';
+    let expectedMessage = 'Variable Template updated.';
     await expect(await toast.locator('.text-base')).toHaveText(expectedMessage);
     await toast.locator('button').click(); // Close the toast
     await page.reload();
@@ -304,11 +304,37 @@ async function deleteVariable(page) {
 
 }
 
+async function findEditedVariable(page, variable) {
+    //  await page.reload()
+    await page.waitForLoadState('load');
+    // Wait for 500 milliseconds
+    await page.waitForTimeout(500);
+    // Search for the variable
+    await page.locator('#VariableTemplates-search').fill(variable);
+    // Wait for 1000 milliseconds
+    await page.waitForTimeout(1000);
+    // Click on the Search button
+    await page.click('form.flex > button:nth-child(2)');
+    // Locate the correct row
+    const row = page.locator('[id^=VariableTemplates-row-]');
+    await expect(row).toHaveCount(1);
+    // Get the index of the row
+    const id = (await row.getAttribute('id'));
+    const index = id.split('-')[2];
+    // Check values for the row
+    await expect(page.locator(`#VariableTemplates-name-${index}`)).toHaveText(variable);
+    await expect(page.locator(`#VariableTemplates-description-${index}`)).toHaveText(
+        'Test Edit Variable'
+    );
+}
+
+
 module.exports = {
     checkVariables,
     deleteVariable,
     createVariable,
     findVariable,
     editVariable,
+    findEditedVariable
 };
 
