@@ -280,7 +280,7 @@ async function findEditedUnit(page, unit) {
     // Check values for the row
     await expect(page.locator(`#Units-name-${index}`)).toHaveText(unit);
     await expect(page.locator(`#Units-description-${index}`)).toHaveText(
-        'Test description'
+        'Test unit edited'
     );
     await expect(page.locator(`#Units-abbreviation-${index}`)).toHaveText(
         unit
@@ -293,7 +293,7 @@ async function findEditedUnit(page, unit) {
     );
     await expect(
         page.locator(`#Units-measurementSystem-${index}`)
-    ).toHaveText('Unknown');
+    ).toHaveText('Metric');
 
 }
 
