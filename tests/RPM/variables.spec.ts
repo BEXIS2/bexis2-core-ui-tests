@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 import { login, host } from '../shared';
 const { checkTitle } = require('./utils/uniqueFunction');
 
-const { checkVariables, createVariable, findVariable, deleteVariable, editVariable, findEditedVariable } = require('./utils/variableFunctions');
+const { checkVariables, createVariable, findVariable, deleteVariable, editVariable, findEditedVariable, checkConstraint, navVariableManage } = require('./utils/variableFunctions');
 
 
 // Annotate entire file as serial.
@@ -32,6 +32,10 @@ test.describe('Variable', () => {
     //   //Check with title name
     //   await checkTitle(page, 'Variable', '.w-full >> .table.table-compact', 'h1.h1');
     // });
+    test('Check Constraint', async () => {
+      await checkConstraint(page);
+      await navVariableManage(page);
+    });
 
     test('Check with name field , description', async () => {
       await checkVariables(page, variableIterate, "Test Variable")
@@ -93,6 +97,11 @@ test.describe('Variable', () => {
     //   await checkTitle(page, 'Variables', '.w-full >> .table.table-compact', 'h1.h1');
     // });
 
+    test('Check Constraint', async () => {
+      await checkConstraint(page);
+      await navVariableManage(page);
+    });
+
     test('Create variable', async () => {
       await createVariable(page, variable);
     });
@@ -112,6 +121,11 @@ test.describe('Variable', () => {
     // test('should match the expected title', async () => {
     //   await checkTitle(page, 'Variables', '.w-full >> .table.table-compact', 'h1.h1');
     // });
+
+    test('Check Constraint', async () => {
+      await checkConstraint(page);
+      await navVariableManage(page);
+    });
 
     test('Create variable', async () => {
       await createVariable(page, variable);
