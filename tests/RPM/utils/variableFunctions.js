@@ -169,9 +169,9 @@ async function createVariable(page, variableName) {
     await page.waitForLoadState('load');
     await page.locator('#create').click();
     await page.waitForLoadState('load');
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(4250);
     await page.locator('#create').click();
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(350);
 
     // Adding name 
     await page.waitForTimeout(250);
@@ -328,6 +328,72 @@ async function findEditedVariable(page, variable) {
     );
 }
 
+async function checkConstraint(page) {
+    await page.waitForLoadState('load');
+    await page.locator('#create').click();
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(4250);
+    await page.locator('#create').click();
+    await page.waitForTimeout(300);
+    
+    try {
+        // Click on the dropdown
+        await page.locator('#constraints').click();
+        await page.waitForTimeout(500);
+
+        let option;
+        try {
+            // Check if the "TestConstraint" exists
+            await page.waitForSelector('.list-item .item:text("Test Constraint")', { visible: true, timeout: 500 });
+            
+
+        } catch (error) {
+          
+            // Perform actions if the element is not found
+            // Click on the SVG element
+            await page.waitForSelector('div.hidden:nth-child(4)', { visible: true });
+
+            // Click on the div element
+            await page.click('div.hidden:nth-child(4)');
+            await page.waitForSelector('text="Manage Constraints"', { visible: true });
+
+            // Click on the div element
+            await page.click('text="Manage Constraints"');
+            await page.waitForLoadState('load');
+            await page.waitForTimeout(1000);
+            await page.locator('#create').click();
+            await page.waitForTimeout(1000);
+            await page.locator('input[id=name]').fill("Test Constraint");
+            await page.locator('textarea[id=description]').fill('Test constraint');
+            await page.selectOption('#constraintTypes', 'Domain');
+            await page.click('div.cm-activeLine.cm-line');
+            await page.waitForTimeout(1000);
+            await page.keyboard.type('Hello Testing Domain');
+            await page.waitForTimeout(1000);
+            await page.click('#save');
+            await page.waitForSelector('.toast[data-testid=toast] .text-base');
+            const toast = await page.locator('.toast[data-testid=toast]');
+            await expect(await toast.locator('.text-base')).toHaveText(`Constraint "Test Constraint" saved.`);
+            await toast.locator('button').click();
+            console.log("Element 'Test Constraint' is added.");
+        }
+
+    } catch (error) {
+        console.log("An error occurred:", error);
+    }
+}
+
+async function navVariableManage(page) {
+
+    // Click on the div element
+    await page.click('div.hidden:nth-child(4)');
+    await page.waitForSelector('text="Manage Variable Templates"', { visible: true });
+
+    // Click on the div element
+    await page.click('text="Manage Variable Templates"');
+}
+
+
 
 module.exports = {
     checkVariables,
@@ -335,6 +401,9 @@ module.exports = {
     createVariable,
     findVariable,
     editVariable,
-    findEditedVariable
+    findEditedVariable,
+    navVariableManage,
+    checkConstraint
+
 };
 
