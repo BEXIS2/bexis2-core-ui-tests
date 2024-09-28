@@ -29,13 +29,13 @@ async function checkDataStructure(page, hasTitle, hasDescription, hasPrimaryKey,
     }
     if (hasPrimaryKey) {
         // Click on make a part of primary key 
-        await page.click('text=Mark a part of primary key');
+        await page.click('xpath=//*[@id="0"]/div[2]/div[1]/div[2]/label/div');
     }
-
     if (hasOptionalValue) {
         // Click on optional value
-        await page.click('text=Value can be optional');
+        await page.click('xpath=//*[@id="0"]/div[2]/div[2]/div[2]/label/div');
     }
+
 
     if (hasName) {
         // Fill in the name input
@@ -110,9 +110,8 @@ async function checkDataStructure(page, hasTitle, hasDescription, hasPrimaryKey,
     else if (hasTitle && hasDescription && hasPrimaryKey && hasOptionalValue && hasName && hasTitleDescription && hasDataType && !hasUnit) {
         await page.waitForLoadState('load');
         await page.waitForTimeout(1500);
-        // Check if the save button is disabled and reload the page
-        const saveButton = page.locator('button#save');
-        await expect(saveButton).toBeDisabled();
+        // Click on save button
+        await page.click('#save');
 
     }
     else if (hasTitle && hasDescription && hasPrimaryKey && hasOptionalValue && hasName && hasTitleDescription && !hasDataType && hasUnit) {
@@ -121,6 +120,7 @@ async function checkDataStructure(page, hasTitle, hasDescription, hasPrimaryKey,
         // Check if the save button is disabled and reload the page
         const saveButton = page.locator('button#save');
         await expect(saveButton).toBeDisabled();
+        
 
     }
 }
@@ -151,7 +151,7 @@ async function createDataStructure(page, titleName) {
     await page.waitForTimeout(500);
 
     // Click on make a part of primary key 
-    await page.click('text=Mark a part of primary key');
+    await page.click('xpath=//*[@id="0"]/div[2]/div[1]/div[2]/label/div');
 
     // Fill in the name input
     await page.locator('input[id=name]').fill(titleName);
@@ -266,10 +266,10 @@ async function checkConstraint(page) {
         try {
             // Check if the "TestConstraint" exists
             await page.waitForSelector('.list-item .item:text("Test Constraint")', { visible: true, timeout: 500 });
-            
+
 
         } catch (error) {
-          
+
             // Perform actions if the element is not found
             // Click on the SVG element
             await page.waitForSelector('div.hidden:nth-child(4)', { visible: true });
@@ -314,6 +314,7 @@ async function navDataStructure(page) {
     await page.click('text="Manage Data Structures"');
 }
 
+
 async function editDataStructure(page) {
 
     // Wait for 500 milliseconds
@@ -322,25 +323,32 @@ async function editDataStructure(page) {
     await page.waitForLoadState('load');
     await page.waitForTimeout(500);
 
+
     // Fill in the title description textarea
     await page.locator('textarea[id=description]').fill('Edited test data structure');
 
     // Wait for 500 milliseconds
     await page.waitForTimeout(500);
 
-    // Click on make a part of primary key 
-    await page.click('text=Value can be optional');
+    // Click on optional value
+    await page.click('xpath=//*[@id="0"]/div[2]/div[2]/div[2]/label/div');
+
+    // Click the on template data dropdown
+    await page.click('#variableTemplate');
+    await page.waitForTimeout(500);
+    const template = await page.waitForSelector('.list-item .item:text("percentage")', { visible: true, enabled: true });
+    await template.click()
 
     // Click the on data type dropdown
-    await page.click('div.value-container.svelte-u3g5ju > input.svelte-u3g5ju');
+    await page.click('#dataType');
     await page.waitForTimeout(500);
     const dataType = await page.waitForSelector('.list-item .item:text("number")', { visible: true, enabled: true });
     await dataType.click()
 
     // Click the on unit dropdown
-    await page.click('div.value-container.svelte-u3g5ju > input#unit');
+    await page.click('#unit');
     await page.waitForTimeout(500);
-    const unit = await page.waitForSelector('.list-item .item:text("cm")', { visible: true, enabled: true });
+    const unit = await page.waitForSelector('.list-item .item:text("%")', { visible: true, enabled: true });
     await unit.click()
     await page.waitForTimeout(500);
 
@@ -373,6 +381,7 @@ async function findEditedDataStructure(page, dataStructure) {
         'Edited test data structure'
     );
 }
+
 
 module.exports = {
 
