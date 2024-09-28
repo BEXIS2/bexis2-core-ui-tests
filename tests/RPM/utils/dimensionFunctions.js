@@ -117,7 +117,7 @@ async function deleteDimension(page, dimension) {
     await page.waitForSelector('.modal');
 
     // Check the modal title
-    await expect(page.locator('.modal-header')).toHaveText('Delete Unit');
+    await expect(page.locator('.modal-header')).toHaveText('Delete Dimension');
     await expect(page.locator('.modal-body')).toHaveText(
         `Are you sure you wish to delete Dimension "${dimension}" (L(0,0)M(0,0)T(0,0)I(0,0)Θ(0,0)N(0,0)J(0,1))?`
     );
