@@ -269,7 +269,7 @@ async function uploadDataStructure(page, titleName) {
     await page.locator('textarea[id=description]').fill('Test data structure');
 
     // Click on make a part of primary key 
-    await page.click('text=Mark a part of primary key');
+    await page.click('xpath=//*[@id="0"]/div[2]/div[1]/div[2]/label/div');
 
     // Click on save button
     await page.click('#save');
@@ -356,21 +356,27 @@ async function editDataStructure(page) {
     // Wait for 500 milliseconds
     await page.waitForTimeout(500);
 
-    // Click on make a part of primary key 
-    await page.click('text=Value can be optional');
+    // Click on optional value
+    await page.click('xpath=//*[@id="0"]/div[2]/div[2]/div[2]/label/div');
 
-    // Click the on data type dropdown
-    await page.click('div.value-container.svelte-u3g5ju > input.svelte-u3g5ju');
-    await page.waitForTimeout(500);
-    const dataType = await page.waitForSelector('.list-item .item:text("number")', { visible: true, enabled: true });
-    await dataType.click()
+   // Click the on template data dropdown
+   await page.click('#variableTemplate');
+   await page.waitForTimeout(500);
+   const template = await page.waitForSelector('.list-item .item:text("percentage")', { visible: true, enabled: true });
+   await template.click()
 
-    // Click the on unit dropdown
-    await page.click('div.value-container.svelte-u3g5ju > input#unit');
-    await page.waitForTimeout(500);
-    const unit = await page.waitForSelector('.list-item .item:text("cm")', { visible: true, enabled: true });
-    await unit.click()
-    await page.waitForTimeout(500);
+   // Click the on data type dropdown
+   await page.click('#dataType');
+   await page.waitForTimeout(500);
+   const dataType = await page.waitForSelector('.list-item .item:text("number")', { visible: true, enabled: true });
+   await dataType.click()
+
+   // Click the on unit dropdown
+   await page.click('#unit');
+   await page.waitForTimeout(500);
+   const unit = await page.waitForSelector('.list-item .item:text("%")', { visible: true, enabled: true });
+   await unit.click()
+   await page.waitForTimeout(500);
 
     // Click on save button
     await page.locator('button[title="save"]').click();
