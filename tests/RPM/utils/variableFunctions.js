@@ -37,10 +37,10 @@ async function checkVariables(page, variableName, hasDescription, hasUnit, hasDa
     }
     if (hasMissingValueName) {
         await page.waitForTimeout(250);
-        await page.locator('input[id=missing-value-name]').fill('Test Missing Value');
+        await page.locator('input[id=missing-value-name-0]').fill('Test Missing Value');
     }
     if (hasMissingValueDes) {
-        await page.locator('input[id=missing-value-description]').fill('Test Missing value Des.');
+        await page.locator('input[id=missing-value-description-0]').fill('Test Missing value Des.');
     }
     if (hasMeanings) {
         // Select Meanings
@@ -173,11 +173,11 @@ async function createVariable(page, variableName) {
     await page.locator('#create').click();
     await page.waitForTimeout(350);
 
-    // Adding name 
+    // Adding name
     await page.waitForTimeout(250);
     await page.locator('input[id=name]').fill(variableName);
 
-    // Adding description   
+    // Adding description
     await page.waitForTimeout(250);
     await page.locator('textarea[id=description]').fill('Test Variable');
 
@@ -258,7 +258,7 @@ async function findVariable(page, variable) {
 async function editVariable(page) {
 
     await page.locator('[id^=edit-]').click(); // Click on the edit button
-    // Edit description   
+    // Edit description
     await page.waitForTimeout(1000);
     await page.locator('textarea[id=description]').fill('Test Edit Variable');
 
@@ -335,7 +335,7 @@ async function checkConstraint(page) {
     await page.waitForTimeout(4250);
     await page.locator('#create').click();
     await page.waitForTimeout(300);
-    
+
     try {
         // Click on the dropdown
         await page.locator('#constraints').click();
@@ -345,10 +345,10 @@ async function checkConstraint(page) {
         try {
             // Check if the "TestConstraint" exists
             await page.waitForSelector('.list-item .item:text("Test Constraint")', { visible: true, timeout: 500 });
-            
+
 
         } catch (error) {
-          
+
             // Perform actions if the element is not found
             // Click on the SVG element
             await page.waitForSelector('div.hidden:nth-child(4)', { visible: true });
@@ -406,4 +406,3 @@ module.exports = {
     checkConstraint
 
 };
-
