@@ -46,9 +46,10 @@ test.describe('Pattern Constraint', () => {
             await checkPatternConstraint(page, "", "Test Contraint", "Pattern", "")
         });
 
-        test('Check with console input and constraint Pattern type ', async () => {
-            await checkPatternConstraint(page, "", "", "Pattern", "Hello Testing Pattern")
-        });
+        // test('Check with console input and constraint Pattern type ', async () => {
+        //     await checkPatternConstraint(page, "", "", "Pattern", "Hello Pattern")
+        // }); Not VALID anymore because on the UI the save button is disabled so there
+        // is no need to ask for validation on toast msgs 
 
         test('Check with name description and constraint Pattern type ', async () => {
             await checkPatternConstraint(page, constraint, "Test Contraint", "Pattern", "")
