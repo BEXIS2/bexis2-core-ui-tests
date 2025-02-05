@@ -4,7 +4,7 @@ const path = require('path');
 async function createNewtabularData(page, title,description) {
     await page.waitForTimeout(500)
     //click on the tabular data tab
-    await page.locator('.pr-1 > :nth-child(1)').click()
+    await page.locator('.pr-1 > :nth-child(2)').click()
     // Select the New tabular data element header and verify its visibility
     const headerElement = page.locator('.h2');
     await expect(headerElement).toBeVisible();
@@ -46,7 +46,7 @@ async function markingVariableData(page){
     await page.locator(':nth-child(2) > .w-8').click()
     await page.locator('#selectData').click()
     await page.waitForTimeout(500)
-    await page.locator(':nth-child(8) > .btn').click()
+    await page.locator(':nth-child(8) > .variant-filled-primary').click() //save button
     // await page.waitForTimeout(10000)
 }
 
@@ -64,11 +64,11 @@ async function EnterTitleandDesc(page,title,desc){
 async function AssignDataTypeDisplayPattern(page,getindex,datatype,displaypattern){
     await page.waitForTimeout(500)
     const index = getindex; // Ensure this has a valid value
-    const setDesc = await page.locator(`:nth-child(${index}) > #variable-0-container-info > .card > .py-2 > :nth-child(1) > .grow > [slot="property"] > #description-container > .label > #description`);
-    const setDataType = await page.locator(`:nth-child(${index}) > #variable-0-container-info #dataType`);
-    const setDisplayPattern =  await page.locator(`:nth-child(${index}) > #variable-0-container-info > .card .svelte-select > .value-container > #displayPattern`);
+    const setDesc = await page.locator(`#description-${index}`);
+    const setDataType = await page.locator(`#dataType-${index}`);
+    const setDisplayPattern =  await page.locator(`#displayPattern-${index}`);
    
-    await  page.waitForSelector(':nth-child(1) > #variable-0-container-info #dataType');
+    await  page.waitForSelector('#dataType-0');
     setDesc.fill('this is test description');
     await page.waitForTimeout(500)
 
