@@ -29,17 +29,17 @@ async function checkDataStructure(page, hasTitle, hasDescription, hasPrimaryKey,
     }
     if (hasPrimaryKey) {
         // Click on make a part of primary key 
-        await page.click('xpath=//*[@id="0"]/div[2]/div[1]/div[2]/label/div');
-    }
-    if (hasOptionalValue) {
-        // Click on optional value
-        await page.click('xpath=//*[@id="0"]/div[2]/div[2]/div[2]/label/div');
+        await page.click('text=Mark as part of primary key');
     }
 
+    if (hasOptionalValue) {
+        // Click on optional value
+        await page.click('text=Value can be optional');
+    }
 
     if (hasName) {
         // Fill in the name input
-        await page.locator('input[id=name]').fill(hasName);
+        await page.locator('input[id=name-0]').fill(hasName);
     }
 
     if (hasTitleDescription) {
@@ -57,7 +57,7 @@ async function checkDataStructure(page, hasTitle, hasDescription, hasPrimaryKey,
 
     if (hasUnit) {
         // Click the on unit dropdown
-        await page.click('div.value-container.svelte-u3g5ju > input#unit');
+        await page.click('input[id=unit-0]');
         await page.waitForTimeout(500);
         const unit = await page.waitForSelector('.list-item .item:text("none")', { visible: true, enabled: true });
         await unit.click()
@@ -110,8 +110,9 @@ async function checkDataStructure(page, hasTitle, hasDescription, hasPrimaryKey,
     else if (hasTitle && hasDescription && hasPrimaryKey && hasOptionalValue && hasName && hasTitleDescription && hasDataType && !hasUnit) {
         await page.waitForLoadState('load');
         await page.waitForTimeout(1500);
-        // Click on save button
-        await page.click('#save');
+        // Check if the save button is disabled and reload the page
+        const saveButton = page.locator('button#save');
+        await expect(saveButton).toBeDisabled();
 
     }
     else if (hasTitle && hasDescription && hasPrimaryKey && hasOptionalValue && hasName && hasTitleDescription && !hasDataType && hasUnit) {
@@ -120,7 +121,6 @@ async function checkDataStructure(page, hasTitle, hasDescription, hasPrimaryKey,
         // Check if the save button is disabled and reload the page
         const saveButton = page.locator('button#save');
         await expect(saveButton).toBeDisabled();
-        
 
     }
 }
@@ -151,10 +151,10 @@ async function createDataStructure(page, titleName) {
     await page.waitForTimeout(500);
 
     // Click on make a part of primary key 
-    await page.click('xpath=//*[@id="0"]/div[2]/div[1]/div[2]/label/div');
+    await page.click('text=Mark as part of primary key');
 
     // Fill in the name input
-    await page.locator('input[id=name]').fill(titleName);
+    await page.locator('input[id=name-0]').fill(titleName);
 
     // Fill in the description textarea
     await page.locator('textarea.textarea.variant-form-material.input-error').fill('Test data structure');
@@ -166,20 +166,24 @@ async function createDataStructure(page, titleName) {
     await dataType.click()
 
     // Click the on unit dropdown
-    await page.click('div.value-container.svelte-u3g5ju > input#unit');
+    await page.click('input[id=unit-0]');
     await page.waitForTimeout(500);
     const unit = await page.waitForSelector('.list-item .item:text("none")', { visible: true, enabled: true });
     await unit.click()
     await page.waitForTimeout(500);
 
     // Click on the dropdown
-    await page.locator('#constraints').click();
+    await page.locator('input[id=constraints-0]').click();
     await page.waitForTimeout(500);
     const constraint = await page.waitForSelector('.list-item .item:text("Test Constraint")', { visible: true, timeout: 500 });
     await constraint.click();
 
     // Wait for 500 milliseconds
     await page.waitForTimeout(500);
+
+    // marking the Primary key
+    const firstToggleInput = page.locator('.slide-toggle .slide-toggle-label > .slide-toggle-track').nth(0);
+    await firstToggleInput.click(); // Click the first matching element
 
     // Click on save button
     await page.click('#save');
@@ -259,17 +263,17 @@ async function checkConstraint(page) {
 
     try {
         // Click on the dropdown
-        await page.locator('#constraints').click();
+        await page.locator('input[id=constraints-0]').click();
         await page.waitForTimeout(500);
 
         let option;
         try {
             // Check if the "TestConstraint" exists
             await page.waitForSelector('.list-item .item:text("Test Constraint")', { visible: true, timeout: 500 });
-
+            
 
         } catch (error) {
-
+          
             // Perform actions if the element is not found
             // Click on the SVG element
             await page.waitForSelector('div.hidden:nth-child(4)', { visible: true });
@@ -330,25 +334,19 @@ async function editDataStructure(page) {
     // Wait for 500 milliseconds
     await page.waitForTimeout(500);
 
-    // Click on optional value
-    await page.click('xpath=//*[@id="0"]/div[2]/div[2]/div[2]/label/div');
-
-    // Click the on template data dropdown
-    await page.click('#variableTemplate');
-    await page.waitForTimeout(500);
-    const template = await page.waitForSelector('.list-item .item:text("percentage")', { visible: true, enabled: true });
-    await template.click()
+    // Click on make a part of primary key 
+    await page.click('text=Value can be optional');
 
     // Click the on data type dropdown
-    await page.click('#dataType');
+    await page.click('div.value-container.svelte-u3g5ju > input.svelte-u3g5ju');
     await page.waitForTimeout(500);
     const dataType = await page.waitForSelector('.list-item .item:text("number")', { visible: true, enabled: true });
     await dataType.click()
 
     // Click the on unit dropdown
-    await page.click('#unit');
+    await page.click('input[id=unit-0]');
     await page.waitForTimeout(500);
-    const unit = await page.waitForSelector('.list-item .item:text("%")', { visible: true, enabled: true });
+    const unit = await page.waitForSelector('.list-item .item:text("none")', { visible: true, enabled: true });
     await unit.click()
     await page.waitForTimeout(500);
 
