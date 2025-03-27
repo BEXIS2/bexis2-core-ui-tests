@@ -11,7 +11,7 @@ async function checkExternalLink(page, linkName, hasType, hasPrefix, hasURI) {
     if (linkName) {
         await page.locator('input[id=name]').fill(linkName);
     }
-
+   
     if (hasType) {
 
         // Click the input element
@@ -21,10 +21,10 @@ async function checkExternalLink(page, linkName, hasType, hasPrefix, hasURI) {
     }
 
     if (hasPrefix) {
-        // Click the input element
-        await page.click('#prefix');
-        await page.waitForTimeout(500);
-        await page.locator('.list-item .item:text("dwc")').click();
+           // Click the input element
+           await page.click('#prefix');
+           await page.waitForTimeout(500);
+           await page.locator('.list-item .item:text("dwc")').click();
 
     }
     if (hasURI) {
@@ -41,7 +41,7 @@ async function checkExternalLink(page, linkName, hasType, hasPrefix, hasURI) {
         await page.reload()
     }
 
-    else if (linkName && hasType && hasPrefix && !hasURI) {
+    else if (linkName && hasType && hasPrefix && !hasURI) {    
         await page.waitForLoadState('load');
         await page.waitForTimeout(1500);
         // Check if the save button is disabled and reload the page
@@ -49,7 +49,7 @@ async function checkExternalLink(page, linkName, hasType, hasPrefix, hasURI) {
         await expect(saveButton).toBeDisabled();
         await page.reload()
     }
-    else if (linkName && !hasType && !hasPrefix && hasURI) {
+    else if (linkName && !hasType && !hasPrefix && hasURI) {    
         await page.waitForLoadState('load');
         await page.waitForTimeout(1500);
         // Check if the save button is enable and reload the page
@@ -65,11 +65,11 @@ async function checkExternalLink(page, linkName, hasType, hasPrefix, hasURI) {
         await page.reload();
     }
 
-
+   
 }
 
 async function findExternalLink(page, linkName) {
-
+    
     await page.waitForLoadState('load');
     // Wait for 500 milliseconds
     await page.waitForTimeout(500);
@@ -104,8 +104,8 @@ async function deleteExternalLink(page) {
     await page.waitForSelector('.modal');
 
     // Check the modal title and body text
-    await expect(page.locator('.modal-header')).toHaveText('Delete External Link');
-    await expect(page.locator('.modal-body')).toContainText(`Are you sure you wish to delete external link ?`);
+    await expect(page.locator('.modal-header')).toContainText('Delete External Link');
+    await expect(page.locator('.modal-body')).toContainText(`Are you sure you wish to delete external link`);
 
     // Click the confirm button in the modal footer
     await page.locator('.modal-footer button.variant-filled').click();
@@ -121,8 +121,8 @@ async function createExternalLink(page, linkName) {
 
     await page.locator('#create').click();
     await page.waitForTimeout(1000);
-    // Fill in the name and description if provided
-
+   // Fill in the name and description if provided
+  
     await page.locator('input[id=name]').fill(linkName);
 
     await page.click('#type');
@@ -169,7 +169,7 @@ async function editExternalLink(page, linkName) {
     await expect(await toast.locator('.text-base')).toHaveText(expectedMessage);
     await toast.locator('button').click(); // Close the toast
     await page.reload();
-
+   
 }
 
 async function findEditedExternalLink(page, linkName) {

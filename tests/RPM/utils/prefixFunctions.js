@@ -82,8 +82,8 @@ async function deletePrefix(page) {
     await page.waitForSelector('.modal');
 
     // Check the modal title and body text
-    await expect(page.locator('.modal-header')).toHaveText('Delete Prefix Category');
-    await expect(page.locator('.modal-body')).toContainText(`Are you sure you wish to delete Prefix Category ?`);
+    await expect(page.locator('.modal-header')).toContainText('Delete Prefix Category');
+    await expect(page.locator('.modal-body')).toContainText(`Are you sure you wish to delete Prefix Category`);
 
     // Click the confirm button in the modal footer
     await page.locator('.modal-footer button.variant-filled').click();

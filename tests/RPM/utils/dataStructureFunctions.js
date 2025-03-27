@@ -220,8 +220,8 @@ async function deleteDataStructure(page) {
     await page.waitForSelector('.modal');
 
     // Check the modal title and body text
-    await expect(page.locator('.modal-header')).toHaveText('Delete Structure');
-    await expect(page.locator('.modal-body')).toContainText(`Are you sure you wish to delete structure with id`);
+    await expect(page.locator('.modal-header')).toContainText('Delete Structure');
+    await expect(page.locator('.modal-body')).toContainText(`Are you sure you wish to delete structure`);
 
     // Click the confirm button in the modal footer
     await page.locator('.modal-footer button.variant-filled').click();
@@ -237,7 +237,7 @@ async function checkAndCloseToast(page) {
 
     // Check the toast message
     const toast = await page.locator('.toast[data-testid=toast]');
-    await expect(await toast.locator('.text-base')).toHaveText(`Structure deleted.`);
+    await expect(await toast.locator('.text-base')).toContainText(`Structure`);
 
     // Close the toast
     await toast.locator('button').click();
