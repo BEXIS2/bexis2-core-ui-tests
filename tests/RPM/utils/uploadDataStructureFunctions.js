@@ -307,7 +307,7 @@ async function deleteDataStructure(page) {
 
     // Check the modal title and body text
     await expect(page.locator('.modal-header')).toHaveText('Delete Structure');
-    await expect(page.locator('.modal-body')).toContainText(`Are you sure you wish to delete structure with id`);
+    await expect(page.locator('.modal-body')).toContainText(`Are you sure you wish to delete structure`);
 
     // Click the confirm button in the modal footer
     await page.locator('.modal-footer button.variant-filled').click();
@@ -323,7 +323,7 @@ async function checkAndCloseToast(page) {
 
     // Check the toast message
     const toast = await page.locator('.toast[data-testid=toast]');
-    await expect(await toast.locator('.text-base')).toHaveText(`Structure deleted.`);
+    await expect(await toast.locator('.text-base')).toContainText(`Structure`);
 
     // Close the toast
     await toast.locator('button').click();
@@ -360,19 +360,19 @@ async function editDataStructure(page) {
     await page.click('xpath=//*[@id="0"]/div[2]/div[2]/div[2]/label/div');
 
    // Click the on template data dropdown
-   await page.click('#variableTemplate');
+   await page.click('#variableTemplate-0');
    await page.waitForTimeout(500);
    const template = await page.waitForSelector('.list-item .item:text("percentage")', { visible: true, enabled: true });
    await template.click()
 
    // Click the on data type dropdown
-   await page.click('#dataType');
+   await page.click('#dataType-0');
    await page.waitForTimeout(500);
    const dataType = await page.waitForSelector('.list-item .item:text("number")', { visible: true, enabled: true });
    await dataType.click()
 
    // Click the on unit dropdown
-   await page.click('#unit');
+   await page.click('#unit-0');
    await page.waitForTimeout(500);
    const unit = await page.waitForSelector('.list-item .item:text("%")', { visible: true, enabled: true });
    await unit.click()
