@@ -27,14 +27,14 @@ async function checkDataStructure(page, hasTitle, hasDescription, hasPrimaryKey,
         // Fill in the title description input
         await page.locator('textarea.textarea.variant-form-material.input-success').fill('Test data structure');
     }
-    if (hasPrimaryKey) {
+    if (!hasPrimaryKey) {
         // Click on make a part of primary key 
-        await page.click('text=Mark as part of primary key');
+        await page.locator('label:has(input[name="isKey"])').click();
     }
 
-    if (hasOptionalValue) {
+    if (!hasOptionalValue) {
         // Click on optional value
-        await page.click('text=Value can be optional');
+        await page.locator('label:has(input[name="isOptional"])').click();
     }
 
     if (hasName) {

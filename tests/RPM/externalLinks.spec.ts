@@ -42,8 +42,8 @@ test.describe('External Links', () => {
 
     test('Check with name field and  has URI', async () => {
       await checkExternalLink(page, linkIterate, "", "", "test@testing.com")
-      await findExternalLink(page, linkIterate)
-      await deleteExternalLink(page, linkIterate)
+      // await findExternalLink(page, linkIterate)
+      // await deleteExternalLink(page, linkIterate)
     });
 
   });

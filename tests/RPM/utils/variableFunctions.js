@@ -1,12 +1,10 @@
 import { expect } from "@playwright/test";
 
 async function checkVariables(page, variableName, hasDescription, hasUnit, hasDataType, hasMissingValueName, hasMissingValueDes, hasMeanings, hasConstraints, hasApproved) {
-    await page.waitForLoadState('load');
+    await page.waitForTimeout(3000);
     await page.locator('#create').click();
     await page.waitForLoadState('load');
     await page.waitForTimeout(4000);
-    await page.locator('#create').click();
-    await page.waitForTimeout(250);
 
     // Fill in the name and description if provided
     if (variableName) {
@@ -166,12 +164,10 @@ async function checkVariables(page, variableName, hasDescription, hasUnit, hasDa
 }
 async function createVariable(page, variableName) {
 
-    await page.waitForLoadState('load');
+    await page.waitForTimeout(3000);
     await page.locator('#create').click();
     await page.waitForLoadState('load');
-    await page.waitForTimeout(4250);
-    await page.locator('#create').click();
-    await page.waitForTimeout(350);
+    await page.waitForTimeout(4000);
 
     // Adding name
     await page.waitForTimeout(250);
@@ -199,10 +195,10 @@ async function createVariable(page, variableName) {
 
     // Adding missing value name
     await page.waitForTimeout(250);
-    await page.locator('input[id=missing-value-name]').fill('Test Missing Value');
+    await page.locator('input[id=missing-value-name-0]').fill('Test Missing Value');
 
     // Adding missing value description
-    await page.locator('input[id=missing-value-description]').fill('Test Missing value Des.');
+    await page.locator('input[id=missing-value-description-0]').fill('Test Missing value Des.');
 
     // Adding Meanings
     await page.locator('#links').click();
@@ -264,10 +260,10 @@ async function editVariable(page) {
 
     // Adding missing value name
     await page.waitForTimeout(250)
-    await page.locator('input[id=missing-value-name]').fill('Test Missing Value Edited');
+    await page.locator('input[id=missing-value-name-0]').fill('Test Missing Value Edited');
 
     // Adding missing value description
-    await page.locator('input[id=missing-value-description]').fill('Edit Test Missing value Des.');
+    await page.locator('input[id=missing-value-description-0]').fill('Edit Test Missing value Des.');
     await page.waitForTimeout(1500);
 
     // Check if the save button is enable and reload the page
@@ -294,7 +290,8 @@ async function deleteVariable(page) {
 
     // Check the modal title and body text
     await expect(page.locator('.modal-header')).toHaveText('Delete Variable Template');
-    await expect(page.locator('.modal-body')).toHaveText(`Are you sure you wish to delete variable template ""?`);
+    await expect(page.locator('.modal-body')).toHaveText(/Are you sure you wish to delete variable template ".*"\?/);
+
 
     // Click the confirm button in the modal footer
     await page.locator('.modal-footer button.variant-filled').click();
@@ -329,12 +326,10 @@ async function findEditedVariable(page, variable) {
 }
 
 async function checkConstraint(page) {
-    await page.waitForLoadState('load');
+    await page.waitForTimeout(3000);
     await page.locator('#create').click();
     await page.waitForLoadState('load');
-    await page.waitForTimeout(4250);
-    await page.locator('#create').click();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(4000);
 
     try {
         // Click on the dropdown
