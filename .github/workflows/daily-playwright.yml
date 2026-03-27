@@ -2,13 +2,13 @@ name: Daily Playwright Test
 
 on:
   schedule:
-    # Jeden Tag um 07:00 UTC
     - cron: "0 7 * * *"
   workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Repo auschecken
@@ -25,12 +25,138 @@ jobs:
       - name: Playwright Browser installieren
         run: npx playwright install --with-deps
 
+      - name: Env-Datei erstellen
+        run: |
+          touch .env
+          echo HOST=${{ secrets.HOST }} >> .env
+          echo ACCOUNT_USERNAME=${{ secrets.ACCOUNT_USERNAME }} >> .env
+          echo ACCOUNT_PASSWORD=${{ secrets.ACCOUNT_PASSWORD }} >> .env
+
       - name: Tests ausführen
         run: npx playwright test
         continue-on-error: true
 
-      - name: HTML-Report erzeugen
-        run: npx playwright show-report --host 0.0.0.0 || true
+      - name: Mail Summary aus JSON bauen
+        if: always()
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+
+          const runUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+
+          function escapeHtml(str = '') {
+            return String(str)
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+          }
+
+          let total = 0;
+          let passed = 0;
+          let failed = 0;
+          let skipped = 0;
+          let timedOut = 0;
+          let interrupted = 0;
+          const failedTests = [];
+
+          function visitSuite(suite, parents = []) {
+            if (!suite) return;
+
+            const nextParents = suite.title ? [...parents, suite.title] : parents;
+
+            if (Array.isArray(suite.specs)) {
+              for (const spec of suite.specs) {
+                const specPath = [...nextParents, spec.title].filter(Boolean).join(' › ');
+
+                if (Array.isArray(spec.tests)) {
+                  for (const test of spec.tests) {
+                    total++;
+
+                    const results = Array.isArray(test.results) ? test.results : [];
+                    const lastResult = results[results.length - 1] || {};
+                    const status = lastResult.status || test.status || 'unknown';
+
+                    if (status === 'passed') passed++;
+                    else if (status === 'failed') {
+                      failed++;
+                      failedTests.push({
+                        title: specPath,
+                        error:
+                          lastResult.error?.message ||
+                          test.error?.message ||
+                          'Ohne Fehlermeldung'
+                      });
+                    }
+                    else if (status === 'skipped') skipped++;
+                    else if (status === 'timedOut') timedOut++;
+                    else if (status === 'interrupted') interrupted++;
+                  }
+                }
+              }
+            }
+
+            if (Array.isArray(suite.suites)) {
+              for (const child of suite.suites) {
+                visitSuite(child, nextParents);
+              }
+            }
+          }
+
+          let html = '';
+
+          if (fs.existsSync('test-results.json')) {
+            const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
+
+            if (report?.suites) {
+              for (const suite of report.suites) {
+                visitSuite(suite, []);
+              }
+            }
+
+            const status =
+              failed > 0 || timedOut > 0 || interrupted > 0 ? 'failure' : 'success';
+
+            html += `<h2>Playwright Daily Run</h2>`;
+            html += `<p><b>Status:</b> ${status}</p>`;
+            html += `<p><b>Repository:</b> ${escapeHtml(process.env.GITHUB_REPOSITORY || '')}</p>`;
+            html += `<p><b>Run:</b> <a href="${runUrl}">${runUrl}</a></p>`;
+
+            html += `<h3>Zusammenfassung</h3>`;
+            html += `<ul>`;
+            html += `<li><b>Gesamt:</b> ${total}</li>`;
+            html += `<li><b>Passed:</b> ${passed}</li>`;
+            html += `<li><b>Failed:</b> ${failed}</li>`;
+            html += `<li><b>Skipped:</b> ${skipped}</li>`;
+            html += `<li><b>Timed out:</b> ${timedOut}</li>`;
+            html += `<li><b>Interrupted:</b> ${interrupted}</li>`;
+            html += `</ul>`;
+
+            if (failedTests.length > 0) {
+              html += `<h3>Fehlgeschlagene Tests</h3><ol>`;
+              for (const test of failedTests.slice(0, 20)) {
+                html += `<li><b>${escapeHtml(test.title)}</b><br><pre>${escapeHtml(test.error)}</pre></li>`;
+              }
+              html += `</ol>`;
+
+              if (failedTests.length > 20) {
+                html += `<p>Weitere fehlgeschlagene Tests findest du im GitHub-Run und im Artifact.</p>`;
+              }
+            } else {
+              html += `<p>Alle Tests waren erfolgreich ✅</p>`;
+            }
+          } else {
+            html = `
+              <h2>Playwright Daily Run</h2>
+              <p><b>Status:</b> failure</p>
+              <p>Die Datei <code>test-results.json</code> wurde nicht gefunden.</p>
+              <p><b>Run:</b> <a href="${runUrl}">${runUrl}</a></p>
+            `;
+          }
+
+          fs.writeFileSync('mail-body.html', html, 'utf8');
+          EOF
 
       - name: Report hochladen
         uses: actions/upload-artifact@v4
@@ -40,6 +166,8 @@ jobs:
           path: |
             playwright-report
             test-results
+            test-results.json
+            mail-body.html
           retention-days: 7
 
       - name: E-Mail senden
@@ -48,14 +176,10 @@ jobs:
         with:
           server_address: ${{ secrets.SMTP_SERVER }}
           server_port: ${{ secrets.SMTP_PORT }}
+          secure: false
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "Playwright Daily Report - ${{ github.repository }} - ${{ job.status }}"
           to: ${{ secrets.MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
-          html_body: |
-            <h2>Playwright Daily Run</h2>
-            <p><b>Status:</b> ${{ job.status }}</p>
-            <p><b>Repository:</b> ${{ github.repository }}</p>
-            <p><b>Run:</b> https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}</p>
-            <p>Den vollständigen Report findest du in den Workflow-Artefakten.</p>
+          html_body: file://mail-body.html
