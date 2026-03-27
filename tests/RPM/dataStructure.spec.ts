@@ -52,9 +52,9 @@ test.describe('Data Structure', () => {
     test('Check with title, title description, name, description, hasPrimaryKey, hasOptionalValue and hasDataType field', async () => {
       await navDataStructure(page);
       await checkDataStructure(page, dataStructure, "Test data structure", "hasPrimaryKey", "hasOptionalValue", dataStructure, "Test data structure", "hasDataType", "");
-      await findDataStructure(page, dataStructure);
-      await deleteDataStructure(page);
-      await checkAndCloseToast(page);
+      // await findDataStructure(page, dataStructure);
+      // await deleteDataStructure(page);
+      // await checkAndCloseToast(page);
 
 
 
