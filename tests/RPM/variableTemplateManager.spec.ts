@@ -22,7 +22,8 @@ test.describe('Variable Template Structure', () => {
     test('create form', async () => {
 
       // Click on setting icon
-      await page.click('.fa.fa-cog');
+      await page.locator('button.flex.items-center.gap-x-1').click();
+
 
       // Clicking on Variable template
       await page.click('text=Manage Variable Templates');

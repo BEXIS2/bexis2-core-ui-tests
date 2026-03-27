@@ -27,14 +27,15 @@ async function createNewtabularData(page, title,description) {
 async function uploadfiles(page){
     const removeButtons = page.locator('button[title="Remove file"]');
 
-    // Solange Buttons existieren → löschen
-    while (await removeButtons.count() > 0) {
-        await removeButtons.first().click();
 
-        // Warten bis das Element wirklich entfernt wurde
-        await expect(removeButtons).toHaveCount(
-            (await removeButtons.count()) - 1
-        );
+    // delete the uploaded file if exist before uploading the new file
+    let count = await removeButtons.count();
+
+    while (count > 0) {
+        await removeButtons.first().click();
+        count--;
+
+        await expect(removeButtons).toHaveCount(count);
     }
 
     const filePath = path.resolve(__dirname, '../../Date_and_time_formats.csv');
@@ -52,6 +53,10 @@ async function markingVariableData(page){
 
     await page.waitForTimeout(500)
     await page.getByRole('button', { name: 'Reset' }).click();
+
+    await page.waitForSelector('#delimeter');
+    await page.locator('#delimeter').selectOption('44');
+    
     await page.waitForSelector('#selectVar');
     const title = page.locator('#edit > #title > b');
     await expect(title).toHaveText('Mark at least Variable and Data');

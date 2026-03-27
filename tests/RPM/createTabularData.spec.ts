@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 const { checkTitle } = require('./utils/uniqueFunction');
 
-const { createNewtabularData,uploadfiles, markingVariableData,EnterTitleandDesc,AssignDataTypeDisplayPattern,markPrimaryandSave,validatePrimaryandSucessSymbols,submitData} = require('./utils/tabularDataFunctions');
+const { createNewtabularData, uploadfiles, markingVariableData,EnterTitleandDesc,AssignDataTypeDisplayPattern,markPrimaryandSave,validatePrimaryandSucessSymbols,submitData} = require('./utils/tabularDataFunctions');
 
 import { login, host } from '../shared';
 

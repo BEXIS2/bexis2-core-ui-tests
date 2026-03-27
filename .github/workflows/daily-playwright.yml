@@ -1,0 +1,61 @@
+name: Daily Playwright Test
+
+on:
+  schedule:
+    # Jeden Tag um 07:00 UTC
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repo auschecken
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Dependencies installieren
+        run: npm ci
+
+      - name: Playwright Browser installieren
+        run: npx playwright install --with-deps
+
+      - name: Tests ausführen
+        run: npx playwright test
+        continue-on-error: true
+
+      - name: HTML-Report erzeugen
+        run: npx playwright show-report --host 0.0.0.0 || true
+
+      - name: Report hochladen
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
+      - name: E-Mail senden
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Playwright Daily Report - ${{ github.repository }} - ${{ job.status }}"
+          to: ${{ secrets.MAIL_TO }}
+          from: ${{ secrets.MAIL_FROM }}
+          html_body: |
+            <h2>Playwright Daily Run</h2>
+            <p><b>Status:</b> ${{ job.status }}</p>
+            <p><b>Repository:</b> ${{ github.repository }}</p>
+            <p><b>Run:</b> https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}</p>
+            <p>Den vollständigen Report findest du in den Workflow-Artefakten.</p>

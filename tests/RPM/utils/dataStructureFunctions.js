@@ -49,7 +49,7 @@ async function checkDataStructure(page, hasTitle, hasDescription, hasPrimaryKey,
 
     if (hasDataType) {
         // Click the on data type dropdown
-        await page.click('div.value-container.svelte-u3g5ju > input.svelte-u3g5ju');
+        await page.click('#dataType-0');
         await page.waitForTimeout(500);
         const dataType = await page.waitForSelector('.list-item .item:text("bool")', { visible: true, enabled: true });
         await dataType.click()
@@ -151,7 +151,7 @@ async function createDataStructure(page, titleName) {
     await page.waitForTimeout(500);
 
     // Click on make a part of primary key 
-    await page.click('text=Mark as part of primary key');
+    await page.locator('label:has(input[name="isKey"])').click();
 
     // Fill in the name input
     await page.locator('input[id=name-0]').fill(titleName);
@@ -162,8 +162,10 @@ async function createDataStructure(page, titleName) {
     // Click the on data type dropdown
     await page.click('div.value-container.svelte-u3g5ju > input.svelte-u3g5ju');
     await page.waitForTimeout(500);
-    const dataType = await page.waitForSelector('.list-item .item:text("bool")', { visible: true, enabled: true });
-    await dataType.click()
+    const dataTypeInput = page.locator('#dataType-0');
+
+    await dataTypeInput.click();
+    await page.getByText('Boolean', { exact: true }).click();
 
     // Click the on unit dropdown
     await page.click('input[id=unit-0]');
