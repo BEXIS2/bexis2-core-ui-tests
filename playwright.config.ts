@@ -12,6 +12,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
 
+
+  // verhindert, dass die ganze Suite endlos läuft
+  globalTimeout: 30 * 60 * 1000, // 30 Minuten
+
   // ✅ WICHTIG: Reporter erweitert
   reporter: [
     ['line'],
