@@ -4,19 +4,14 @@ import 'dotenv/config';
 export default defineConfig({
   testDir: './tests',
 
-  // Parallel
   fullyParallel: true,
 
-  // CI Settings
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
 
+  globalTimeout: 30 * 60 * 1000,
 
-  // verhindert, dass die ganze Suite endlos läuft
-  globalTimeout: 30 * 60 * 1000, // 30 Minuten
-
-  // ✅ WICHTIG: Reporter erweitert
   reporter: [
     ['line'],
     ['html', { open: 'never' }],
@@ -24,8 +19,7 @@ export default defineConfig({
   ],
 
   use: {
-    // baseURL: 'http://127.0.0.1:3000',
-
+    baseURL: process.env.HOST || 'https://rc.bexis2.uni-jena.de',
     trace: 'on-first-retry',
   },
 
@@ -42,32 +36,5 @@ export default defineConfig({
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
-
-    // Optional Mobile
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    // Optional Browser Channels
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
-
-  // Optional Dev Server
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://127.0.0.1:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
 });
