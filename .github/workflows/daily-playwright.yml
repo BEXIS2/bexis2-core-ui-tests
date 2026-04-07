@@ -4,6 +4,19 @@ on:
   schedule:
     - cron: "0 7 * * *"
   workflow_dispatch:
+    inputs:
+      host:
+        description: "Zu testende Adresse"
+        required: false
+        default: ""
+      account_username:
+        description: "Benutzername"
+        required: false
+        default: ""
+      account_password:
+        description: "Passwort"
+        required: false
+        default: ""
 
 jobs:
   test:
@@ -26,11 +39,21 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Env-Datei erstellen
+        shell: bash
         run: |
           touch .env
-          echo HOST=${{ secrets.HOST }} >> .env
-          echo ACCOUNT_USERNAME=${{ secrets.ACCOUNT_USERNAME }} >> .env
-          echo ACCOUNT_PASSWORD=${{ secrets.ACCOUNT_PASSWORD }} >> .env
+
+          HOST_INPUT="${{ github.event.inputs.host }}"
+          USER_INPUT="${{ github.event.inputs.account_username }}"
+          PASS_INPUT="${{ github.event.inputs.account_password }}"
+
+          HOST_VALUE="${HOST_INPUT:-${{ secrets.HOST }}}"
+          USER_VALUE="${USER_INPUT:-${{ secrets.ACCOUNT_USERNAME }}}"
+          PASS_VALUE="${PASS_INPUT:-${{ secrets.ACCOUNT_PASSWORD }}}"
+
+          echo "HOST=$HOST_VALUE" >> .env
+          echo "ACCOUNT_USERNAME=$USER_VALUE" >> .env
+          echo "ACCOUNT_PASSWORD=$PASS_VALUE" >> .env
 
       - name: Tests ausführen
         run: npx playwright test
