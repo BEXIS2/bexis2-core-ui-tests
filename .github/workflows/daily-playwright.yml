@@ -56,11 +56,17 @@ jobs:
           echo "ACCOUNT_PASSWORD=$PASS_VALUE" >> .env
 
       - name: Tests ausführen
-        run: npx playwright test
+        id: run_tests
         continue-on-error: true
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results.json
+        run: npx playwright test --reporter=line,json,html
 
       - name: Mail Summary aus JSON bauen
         if: always()
+        env:
+          TEST_STEP_OUTCOME: ${{ steps.run_tests.outcome }}
+          TEST_STEP_CONCLUSION: ${{ steps.run_tests.conclusion }}
         run: |
           node <<'EOF'
           const fs = require('fs');
@@ -82,7 +88,11 @@ jobs:
           let skipped = 0;
           let timedOut = 0;
           let interrupted = 0;
+
           const failedTests = [];
+          const interruptedTests = [];
+          const timedOutTests = [];
+          const skippedTests = [];
 
           function visitSuite(suite, parents = []) {
             if (!suite) return;
@@ -101,20 +111,36 @@ jobs:
                     const lastResult = results[results.length - 1] || {};
                     const status = lastResult.status || test.status || 'unknown';
 
-                    if (status === 'passed') passed++;
-                    else if (status === 'failed') {
+                    if (status === 'passed') {
+                      passed++;
+                    } else if (status === 'failed') {
                       failed++;
                       failedTests.push({
                         title: specPath,
-                        error:
+                        error: lastResult.error?.message || test.error?.message || 'Ohne Fehlermeldung'
+                      });
+                    } else if (status === 'skipped') {
+                      skipped++;
+                      skippedTests.push({
+                        title: specPath,
+                        reason:
                           lastResult.error?.message ||
                           test.error?.message ||
-                          'Ohne Fehlermeldung'
+                          'Kein Skip-Grund im JSON vorhanden'
+                      });
+                    } else if (status === 'timedOut') {
+                      timedOut++;
+                      timedOutTests.push({
+                        title: specPath,
+                        error: lastResult.error?.message || test.error?.message || 'Timeout ohne Fehlermeldung'
+                      });
+                    } else if (status === 'interrupted') {
+                      interrupted++;
+                      interruptedTests.push({
+                        title: specPath,
+                        error: lastResult.error?.message || test.error?.message || 'Unterbrochen ohne Fehlermeldung'
                       });
                     }
-                    else if (status === 'skipped') skipped++;
-                    else if (status === 'timedOut') timedOut++;
-                    else if (status === 'interrupted') interrupted++;
                   }
                 }
               }
@@ -138,13 +164,15 @@ jobs:
               }
             }
 
-            const status =
-              failed > 0 || timedOut > 0 || interrupted > 0 ? 'failure' : 'success';
+            const hasProblems = failed > 0 || timedOut > 0 || interrupted > 0;
+            const status = hasProblems ? 'failure' : 'success';
 
             html += `<h2>Playwright Daily Run</h2>`;
             html += `<p><b>Status:</b> ${status}</p>`;
             html += `<p><b>Repository:</b> ${escapeHtml(process.env.GITHUB_REPOSITORY || '')}</p>`;
             html += `<p><b>Run:</b> <a href="${runUrl}">${runUrl}</a></p>`;
+            html += `<p><b>Test-Step outcome:</b> ${escapeHtml(process.env.TEST_STEP_OUTCOME || '')}</p>`;
+            html += `<p><b>Test-Step conclusion:</b> ${escapeHtml(process.env.TEST_STEP_CONCLUSION || '')}</p>`;
 
             html += `<h3>Zusammenfassung</h3>`;
             html += `<ul>`;
@@ -156,18 +184,37 @@ jobs:
             html += `<li><b>Interrupted:</b> ${interrupted}</li>`;
             html += `</ul>`;
 
-            if (failedTests.length > 0) {
-              html += `<h3>Fehlgeschlagene Tests</h3><ol>`;
-              for (const test of failedTests.slice(0, 20)) {
-                html += `<li><b>${escapeHtml(test.title)}</b><br><pre>${escapeHtml(test.error)}</pre></li>`;
+            if (hasProblems) {
+              if (failedTests.length > 0) {
+                html += `<h3>Fehlgeschlagene Tests</h3><ol>`;
+                for (const test of failedTests.slice(0, 20)) {
+                  html += `<li><b>${escapeHtml(test.title)}</b><br><pre>${escapeHtml(test.error)}</pre></li>`;
+                }
+                html += `</ol>`;
               }
-              html += `</ol>`;
 
-              if (failedTests.length > 20) {
-                html += `<p>Weitere fehlgeschlagene Tests findest du im GitHub-Run und im Artifact.</p>`;
+              if (timedOutTests.length > 0) {
+                html += `<h3>Timeout-Tests</h3><ol>`;
+                for (const test of timedOutTests.slice(0, 20)) {
+                  html += `<li><b>${escapeHtml(test.title)}</b><br><pre>${escapeHtml(test.error)}</pre></li>`;
+                }
+                html += `</ol>`;
+              }
+
+              if (interruptedTests.length > 0) {
+                html += `<h3>Unterbrochene Tests</h3><ol>`;
+                for (const test of interruptedTests.slice(0, 20)) {
+                  html += `<li><b>${escapeHtml(test.title)}</b><br><pre>${escapeHtml(test.error)}</pre></li>`;
+                }
+                html += `</ol>`;
               }
             } else {
-              html += `<p>Alle Tests waren erfolgreich ✅</p>`;
+              html += `<p>Alle ausgeführten Tests waren erfolgreich ✅</p>`;
+            }
+
+            if (skipped > 0) {
+              html += `<h3>Hinweis zu Skipped</h3>`;
+              html += `<p>Es wurden ${skipped} Tests als skipped gemeldet. Das kann durch test.skip(), Projekt-/Browser-Konfigurationen oder nicht ausgeführte Testpfade entstehen. Diese Zahl sollte mit der Playwright-Konfiguration gegengeprüft werden.</p>`;
             }
           } else {
             html = `
@@ -202,7 +249,7 @@ jobs:
           secure: false
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Playwright Daily Report - ${{ github.repository }} - ${{ job.status }}"
+          subject: "Playwright Daily Report - ${{ github.repository }} - TestStep:${{ steps.run_tests.outcome }}"
           to: ${{ secrets.MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
           html_body: file://mail-body.html
