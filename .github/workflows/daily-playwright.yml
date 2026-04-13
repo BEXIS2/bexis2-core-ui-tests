@@ -60,7 +60,8 @@ jobs:
         continue-on-error: true
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results.json
-        run: npx playwright test --reporter=line,json,html
+        run: |
+          npx playwright test || true
 
       - name: Mail Summary aus JSON bauen
         if: always()
@@ -82,6 +83,39 @@ jobs:
               .replace(/'/g, '&#39;');
           }
 
+          function formatLocation(loc) {
+            if (!loc) return 'Unbekannt';
+            const file = loc.file || 'unbekannte Datei';
+            const line = loc.line ?? '?';
+            const column = loc.column ?? '?';
+            return `${file}:${line}:${column}`;
+          }
+
+          function formatError(test, result) {
+            const err = result?.error || test?.error || {};
+            const message = err.message || 'Ohne Fehlermeldung';
+            const stack = err.stack || '';
+            return stack ? `${message}\n\n${stack}` : message;
+          }
+
+          function getProjectName(test, result) {
+            return (
+              result?.projectName ||
+              test?.projectName ||
+              test?.project?.name ||
+              'Unbekannt'
+            );
+          }
+
+          function collectAttachments(result) {
+            const attachments = Array.isArray(result?.attachments) ? result.attachments : [];
+            return attachments.map(att => ({
+              name: att.name || 'attachment',
+              path: att.path || '',
+              contentType: att.contentType || ''
+            }));
+          }
+
           let total = 0;
           let passed = 0;
           let failed = 0;
@@ -90,8 +124,8 @@ jobs:
           let interrupted = 0;
 
           const failedTests = [];
-          const interruptedTests = [];
           const timedOutTests = [];
+          const interruptedTests = [];
           const skippedTests = [];
 
           function visitSuite(suite, parents = []) {
@@ -103,44 +137,45 @@ jobs:
               for (const spec of suite.specs) {
                 const specPath = [...nextParents, spec.title].filter(Boolean).join(' › ');
 
-                if (Array.isArray(spec.tests)) {
-                  for (const test of spec.tests) {
-                    total++;
+                if (!Array.isArray(spec.tests)) continue;
 
-                    const results = Array.isArray(test.results) ? test.results : [];
-                    const lastResult = results[results.length - 1] || {};
-                    const status = lastResult.status || test.status || 'unknown';
+                for (const test of spec.tests) {
+                  const results = Array.isArray(test.results) ? test.results : [];
+                  const lastResult = results[results.length - 1] || {};
+                  const status = lastResult.status || test.status || 'unknown';
 
-                    if (status === 'passed') {
-                      passed++;
-                    } else if (status === 'failed') {
-                      failed++;
-                      failedTests.push({
-                        title: specPath,
-                        error: lastResult.error?.message || test.error?.message || 'Ohne Fehlermeldung'
-                      });
-                    } else if (status === 'skipped') {
-                      skipped++;
-                      skippedTests.push({
-                        title: specPath,
-                        reason:
-                          lastResult.error?.message ||
-                          test.error?.message ||
-                          'Kein Skip-Grund im JSON vorhanden'
-                      });
-                    } else if (status === 'timedOut') {
-                      timedOut++;
-                      timedOutTests.push({
-                        title: specPath,
-                        error: lastResult.error?.message || test.error?.message || 'Timeout ohne Fehlermeldung'
-                      });
-                    } else if (status === 'interrupted') {
-                      interrupted++;
-                      interruptedTests.push({
-                        title: specPath,
-                        error: lastResult.error?.message || test.error?.message || 'Unterbrochen ohne Fehlermeldung'
-                      });
-                    }
+                  total++;
+
+                  const entry = {
+                    title: specPath,
+                    project: getProjectName(test, lastResult),
+                    location: formatLocation(lastResult.location || test.location),
+                    error: formatError(test, lastResult),
+                    retry: lastResult.retry ?? 0,
+                    duration: lastResult.duration ?? 0,
+                    attachments: collectAttachments(lastResult),
+                    stdout: Array.isArray(lastResult.stdout)
+                      ? lastResult.stdout.map(x => typeof x === 'string' ? x : x.text || '').join('\n')
+                      : '',
+                    stderr: Array.isArray(lastResult.stderr)
+                      ? lastResult.stderr.map(x => typeof x === 'string' ? x : x.text || '').join('\n')
+                      : '',
+                  };
+
+                  if (status === 'passed') {
+                    passed++;
+                  } else if (status === 'failed') {
+                    failed++;
+                    failedTests.push(entry);
+                  } else if (status === 'skipped') {
+                    skipped++;
+                    skippedTests.push(entry);
+                  } else if (status === 'timedOut') {
+                    timedOut++;
+                    timedOutTests.push(entry);
+                  } else if (status === 'interrupted') {
+                    interrupted++;
+                    interruptedTests.push(entry);
                   }
                 }
               }
@@ -151,6 +186,44 @@ jobs:
                 visitSuite(child, nextParents);
               }
             }
+          }
+
+          function renderTestList(title, tests) {
+            if (!tests.length) return '';
+
+            let html = `<h3>${escapeHtml(title)}</h3><ol>`;
+
+            for (const test of tests.slice(0, 20)) {
+              html += `<li>`;
+              html += `<b>${escapeHtml(test.title)}</b><br>`;
+              html += `<b>Projekt/Browser:</b> ${escapeHtml(test.project)}<br>`;
+              html += `<b>Datei:</b> <code>${escapeHtml(test.location)}</code><br>`;
+              html += `<b>Retry:</b> ${escapeHtml(String(test.retry))}<br>`;
+              html += `<b>Dauer:</b> ${escapeHtml(String(test.duration))} ms<br>`;
+
+              if (test.attachments.length > 0) {
+                html += `<b>Attachments:</b><ul>`;
+                for (const att of test.attachments) {
+                  html += `<li>${escapeHtml(att.name)}${att.path ? ` - <code>${escapeHtml(att.path)}</code>` : ''}${att.contentType ? ` (${escapeHtml(att.contentType)})` : ''}</li>`;
+                }
+                html += `</ul>`;
+              }
+
+              html += `<b>Fehler:</b><pre>${escapeHtml(test.error)}</pre>`;
+
+              if (test.stdout) {
+                html += `<b>stdout:</b><pre>${escapeHtml(test.stdout)}</pre>`;
+              }
+
+              if (test.stderr) {
+                html += `<b>stderr:</b><pre>${escapeHtml(test.stderr)}</pre>`;
+              }
+
+              html += `</li>`;
+            }
+
+            html += `</ol>`;
+            return html;
           }
 
           let html = '';
@@ -185,36 +258,18 @@ jobs:
             html += `</ul>`;
 
             if (hasProblems) {
-              if (failedTests.length > 0) {
-                html += `<h3>Fehlgeschlagene Tests</h3><ol>`;
-                for (const test of failedTests.slice(0, 20)) {
-                  html += `<li><b>${escapeHtml(test.title)}</b><br><pre>${escapeHtml(test.error)}</pre></li>`;
-                }
-                html += `</ol>`;
-              }
-
-              if (timedOutTests.length > 0) {
-                html += `<h3>Timeout-Tests</h3><ol>`;
-                for (const test of timedOutTests.slice(0, 20)) {
-                  html += `<li><b>${escapeHtml(test.title)}</b><br><pre>${escapeHtml(test.error)}</pre></li>`;
-                }
-                html += `</ol>`;
-              }
-
-              if (interruptedTests.length > 0) {
-                html += `<h3>Unterbrochene Tests</h3><ol>`;
-                for (const test of interruptedTests.slice(0, 20)) {
-                  html += `<li><b>${escapeHtml(test.title)}</b><br><pre>${escapeHtml(test.error)}</pre></li>`;
-                }
-                html += `</ol>`;
-              }
+              html += renderTestList('Fehlgeschlagene Tests', failedTests);
+              html += renderTestList('Timeout-Tests', timedOutTests);
+              html += renderTestList('Unterbrochene Tests', interruptedTests);
+              html += `<p><b>Hinweis:</b> Zusätzliche Dateien wie Trace, Screenshot oder Video liegen im hochgeladenen Artifact <code>playwright-report</code> bzw. <code>test-results</code>.</p>`;
             } else {
               html += `<p>Alle ausgeführten Tests waren erfolgreich ✅</p>`;
             }
 
             if (skipped > 0) {
               html += `<h3>Hinweis zu Skipped</h3>`;
-              html += `<p>Es wurden ${skipped} Tests als skipped gemeldet. Das kann durch test.skip(), Projekt-/Browser-Konfigurationen oder nicht ausgeführte Testpfade entstehen. Diese Zahl sollte mit der Playwright-Konfiguration gegengeprüft werden.</p>`;
+              html += `<p>Es wurden ${skipped} Tests als skipped gemeldet. Bei mehreren Playwright-Projekten wie Chromium, Firefox und WebKit kann diese Zahl deutlich höher wirken, weil Tests pro Browser separat im JSON auftauchen.</p>`;
+              html += renderTestList('Skipped-Tests', skippedTests);
             }
           } else {
             html = `
