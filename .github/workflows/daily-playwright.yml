@@ -23,7 +23,7 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
 
     steps:
@@ -39,7 +39,7 @@ jobs:
         run: npm ci
 
       - name: Playwright Browser installieren
-        run: npx playwright install --with-deps
+        run: npx playwright install
 
       - name: Env-Datei erstellen
         shell: bash
@@ -80,14 +80,6 @@ jobs:
           const fs = require('fs');
 
           const runUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-
-          const escapeHtml = (str = '') =>
-            String(str)
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;');
 
           let html = '';
           let exitCode = 0;
