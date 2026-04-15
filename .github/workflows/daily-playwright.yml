@@ -20,7 +20,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
@@ -65,78 +65,30 @@ jobs:
 
       - name: Mail Summary aus JSON bauen
         if: always()
-        env:
-          TEST_STEP_OUTCOME: ${{ steps.run_tests.outcome }}
-          TEST_STEP_CONCLUSION: ${{ steps.run_tests.conclusion }}
         run: |
           node <<'EOF'
           const fs = require('fs');
 
           const runUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
 
-          function escapeHtml(str = '') {
-            return String(str)
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;');
-          }
-
-          let total = 0;
-          let passed = 0;
-          let failed = 0;
-          let skipped = 0;
-          let timedOut = 0;
-          let interrupted = 0;
-
-          function visitSuite(suite) {
-            if (!suite) return;
-
-            if (Array.isArray(suite.specs)) {
-              for (const spec of suite.specs) {
-                if (!Array.isArray(spec.tests)) continue;
-
-                for (const test of spec.tests) {
-                  const results = Array.isArray(test.results) ? test.results : [];
-                  const lastResult = results[results.length - 1] || {};
-                  const status = lastResult.status || test.status || 'unknown';
-
-                  total++;
-
-                  if (status === 'passed') passed++;
-                  else if (status === 'failed') failed++;
-                  else if (status === 'skipped') skipped++;
-                  else if (status === 'timedOut') timedOut++;
-                  else if (status === 'interrupted') interrupted++;
-                }
-              }
-            }
-
-            if (Array.isArray(suite.suites)) {
-              for (const child of suite.suites) {
-                visitSuite(child);
-              }
-            }
-          }
-
           let html = '';
 
           if (fs.existsSync('test-results.json')) {
             const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
+            const stats = report?.stats || {};
 
-            if (report?.suites) {
-              for (const suite of report.suites) {
-                visitSuite(suite);
-              }
-            }
+            const passed = Number(stats.expected || 0);
+            const failed = Number(stats.unexpected || 0);
+            const flaky = Number(stats.flaky || 0);
+            const skipped = Number(stats.skipped || 0);
+            const total = passed + failed + flaky + skipped;
 
-            const hasProblems = failed > 0 || timedOut > 0 || interrupted > 0;
+            const hasProblems = failed > 0;
             const statusText = hasProblems ? 'Fehlgeschlagen' : 'Erfolgreich';
 
             html += `<h2>Playwright Report</h2>`;
             html += `<p><b>Status:</b> ${statusText}</p>`;
-            html += `<p><b>Gesamt:</b> ${total} | <b>Passed:</b> ${passed} | <b>Failed:</b> ${failed} | <b>Timed out:</b> ${timedOut} | <b>Interrupted:</b> ${interrupted} | <b>Skipped:</b> ${skipped}</p>`;
+            html += `<p><b>Gesamt:</b> ${total} | <b>Passed:</b> ${passed} | <b>Failed:</b> ${failed} | <b>Flaky:</b> ${flaky} | <b>Skipped:</b> ${skipped}</p>`;
             html += `<p><a href="${runUrl}">GitHub Action öffnen</a></p>`;
             html += `<p>Details, Report, Trace und weitere Dateien liegen in den Artifacts.</p>`;
           } else {
