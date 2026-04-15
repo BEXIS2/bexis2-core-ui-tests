@@ -2,7 +2,7 @@ name: Daily Playwright Test
 
 on:
   schedule:
-    - cron: "0 22 * * *"
+    - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:
       host:
@@ -18,28 +18,25 @@ on:
         required: false
         default: ""
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
       - name: Repo auschecken
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Node einrichten
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Dependencies installieren
         run: npm ci
 
       - name: Playwright Browser installieren
-        run: npx playwright install
+        run: npx playwright install --with-deps
 
       - name: Env-Datei erstellen
         shell: bash
@@ -54,101 +51,48 @@ jobs:
           USER_VALUE="${USER_INPUT:-${{ secrets.ACCOUNT_USERNAME }}}"
           PASS_VALUE="${PASS_INPUT:-${{ secrets.ACCOUNT_PASSWORD }}}"
 
-          {
-            echo "HOST=$HOST_VALUE"
-            echo "ACCOUNT_USERNAME=$USER_VALUE"
-            echo "ACCOUNT_PASSWORD=$PASS_VALUE"
-          } >> .env
+          echo "HOST=$HOST_VALUE" >> .env
+          echo "ACCOUNT_USERNAME=$USER_VALUE" >> .env
+          echo "ACCOUNT_PASSWORD=$PASS_VALUE" >> .env
 
       - name: Tests ausführen
         id: run_tests
-        shell: bash
-        env:
-          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results.json
-        run: |
-          EXIT_CODE=0
-          npx playwright test --reporter=line,json,html || EXIT_CODE=$?
-          echo "$EXIT_CODE" > test-exit-code.txt
-          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
-          exit 0
+        continue-on-error: true
+        run: npx playwright test
 
-      - name: Mail Summary aus JSON bauen
+      - name: Einfache Mail erstellen
         if: always()
-        shell: bash
         run: |
-          node <<'EOF'
-          const fs = require('fs');
+          if [ "${{ steps.run_tests.outcome }}" = "success" ]; then
+            echo "<h2>Playwright Test</h2><p>Status: ✅ Erfolgreich</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
+          else
+            echo "<h2>Playwright Test</h2><p>Status: ❌ Fehlgeschlagen</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
+          fi
 
-          const runUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-
-          let html = '';
-          let exitCode = 0;
-
-          if (fs.existsSync('test-exit-code.txt')) {
-            exitCode = Number(fs.readFileSync('test-exit-code.txt', 'utf8').trim() || '0');
-          }
-
-          if (fs.existsSync('test-results.json')) {
-            const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
-            const stats = report?.stats || {};
-
-            const passed = Number(stats.expected || 0);
-            const failed = Number(stats.unexpected || 0);
-            const flaky = Number(stats.flaky || 0);
-            const skipped = Number(stats.skipped || 0);
-            const total = passed + failed + flaky + skipped;
-
-            const hasProblems = failed > 0 || exitCode !== 0;
-            const statusText = hasProblems ? 'Fehlgeschlagen' : 'Erfolgreich';
-
-            html += `<h2>Playwright Report</h2>`;
-            html += `<p><b>Status:</b> ${statusText}</p>`;
-            html += `<p><b>Gesamt:</b> ${total} | <b>Passed:</b> ${passed} | <b>Failed:</b> ${failed} | <b>Flaky:</b> ${flaky} | <b>Skipped:</b> ${skipped}</p>`;
-            html += `<p><b>Exit Code:</b> ${exitCode}</p>`;
-            html += `<p><a href="${runUrl}">GitHub Action öffnen</a></p>`;
-            html += `<p>Details und Report liegen in den Artifacts.</p>`;
-          } else {
-            html += `<h2>Playwright Report</h2>`;
-            html += `<p><b>Status:</b> Fehlgeschlagen</p>`;
-            html += `<p>test-results.json wurde nicht gefunden.</p>`;
-            html += `<p><b>Exit Code:</b> ${exitCode}</p>`;
-            html += `<p><a href="${runUrl}">GitHub Action öffnen</a></p>`;
-          }
-
-          fs.writeFileSync('mail-body.html', html, 'utf8');
-          EOF
-
-      - name: Playwright Report hochladen
-        uses: actions/upload-artifact@v5
+      - name: Report hochladen
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
-          path: playwright-report
-          retention-days: 7
-          if-no-files-found: warn
-
-      - name: Test-Zusammenfassung hochladen
-        uses: actions/upload-artifact@v5
-        if: always()
-        with:
-          name: playwright-summary
           path: |
-            test-results.json
-            test-exit-code.txt
-            mail-body.html
+            playwright-report
+            test-results
           retention-days: 7
-          if-no-files-found: warn
 
       - name: E-Mail senden
         if: always()
-        uses: dawidd6/action-send-mail@v16
+        uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.SMTP_SERVER }}
           server_port: ${{ secrets.SMTP_PORT }}
           secure: false
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Playwright Report - ExitCode:${{ steps.run_tests.outputs.exit_code }}"
+          subject: "Playwright Test - ${{ steps.run_tests.outcome }}"
           to: ${{ secrets.MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
           html_body: file://mail-body.html
+
+      - name: Workflow fehlschlagen lassen, wenn Tests fehlgeschlagen sind
+        if: steps.run_tests.outcome != 'success'
+        run: exit 1
