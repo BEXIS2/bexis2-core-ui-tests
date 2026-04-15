@@ -106,7 +106,7 @@ jobs:
             html += `<p><b>Gesamt:</b> ${total} | <b>Passed:</b> ${passed} | <b>Failed:</b> ${failed} | <b>Flaky:</b> ${flaky} | <b>Skipped:</b> ${skipped}</p>`;
             html += `<p><b>Exit Code:</b> ${exitCode}</p>`;
             html += `<p><a href="${runUrl}">GitHub Action öffnen</a></p>`;
-            html += `<p>Details, Report, Trace und weitere Dateien liegen in den Artifacts.</p>`;
+            html += `<p>Details und Report liegen in den Artifacts.</p>`;
           } else {
             html += `<h2>Playwright Report</h2>`;
             html += `<p><b>Status:</b> Fehlgeschlagen</p>`;
@@ -118,14 +118,21 @@ jobs:
           fs.writeFileSync('mail-body.html', html, 'utf8');
           EOF
 
-      - name: Report hochladen
-        uses: actions/upload-artifact@v6
+      - name: Playwright Report hochladen
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
+          path: playwright-report
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Test-Zusammenfassung hochladen
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-summary
           path: |
-            playwright-report
-            test-results
             test-results.json
             test-exit-code.txt
             mail-body.html
@@ -134,7 +141,7 @@ jobs:
 
       - name: E-Mail senden
         if: always()
-        uses: dawidd6/action-send-mail@v16
+        uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.SMTP_SERVER }}
           server_port: ${{ secrets.SMTP_PORT }}
