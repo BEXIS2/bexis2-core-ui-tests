@@ -18,6 +18,9 @@ on:
         required: false
         default: ""
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -25,10 +28,10 @@ jobs:
 
     steps:
       - name: Repo auschecken
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Node einrichten
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -51,27 +54,47 @@ jobs:
           USER_VALUE="${USER_INPUT:-${{ secrets.ACCOUNT_USERNAME }}}"
           PASS_VALUE="${PASS_INPUT:-${{ secrets.ACCOUNT_PASSWORD }}}"
 
-          echo "HOST=$HOST_VALUE" >> .env
-          echo "ACCOUNT_USERNAME=$USER_VALUE" >> .env
-          echo "ACCOUNT_PASSWORD=$PASS_VALUE" >> .env
+          {
+            echo "HOST=$HOST_VALUE"
+            echo "ACCOUNT_USERNAME=$USER_VALUE"
+            echo "ACCOUNT_PASSWORD=$PASS_VALUE"
+          } >> .env
 
       - name: Tests ausführen
         id: run_tests
-        continue-on-error: true
+        shell: bash
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results.json
         run: |
-          npx playwright test || true
+          EXIT_CODE=0
+          npx playwright test || EXIT_CODE=$?
+          echo "$EXIT_CODE" > test-exit-code.txt
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          exit 0
 
       - name: Mail Summary aus JSON bauen
         if: always()
+        shell: bash
         run: |
           node <<'EOF'
           const fs = require('fs');
 
           const runUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
 
+          const escapeHtml = (str = '') =>
+            String(str)
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+
           let html = '';
+          let exitCode = 0;
+
+          if (fs.existsSync('test-exit-code.txt')) {
+            exitCode = Number(fs.readFileSync('test-exit-code.txt', 'utf8').trim() || '0');
+          }
 
           if (fs.existsSync('test-results.json')) {
             const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
@@ -83,18 +106,20 @@ jobs:
             const skipped = Number(stats.skipped || 0);
             const total = passed + failed + flaky + skipped;
 
-            const hasProblems = failed > 0;
+            const hasProblems = failed > 0 || exitCode !== 0;
             const statusText = hasProblems ? 'Fehlgeschlagen' : 'Erfolgreich';
 
             html += `<h2>Playwright Report</h2>`;
             html += `<p><b>Status:</b> ${statusText}</p>`;
             html += `<p><b>Gesamt:</b> ${total} | <b>Passed:</b> ${passed} | <b>Failed:</b> ${failed} | <b>Flaky:</b> ${flaky} | <b>Skipped:</b> ${skipped}</p>`;
+            html += `<p><b>Exit Code:</b> ${exitCode}</p>`;
             html += `<p><a href="${runUrl}">GitHub Action öffnen</a></p>`;
             html += `<p>Details, Report, Trace und weitere Dateien liegen in den Artifacts.</p>`;
           } else {
             html += `<h2>Playwright Report</h2>`;
             html += `<p><b>Status:</b> Fehlgeschlagen</p>`;
             html += `<p>test-results.json wurde nicht gefunden.</p>`;
+            html += `<p><b>Exit Code:</b> ${exitCode}</p>`;
             html += `<p><a href="${runUrl}">GitHub Action öffnen</a></p>`;
           }
 
@@ -102,7 +127,7 @@ jobs:
           EOF
 
       - name: Report hochladen
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-report
@@ -110,19 +135,21 @@ jobs:
             playwright-report
             test-results
             test-results.json
+            test-exit-code.txt
             mail-body.html
           retention-days: 7
+          if-no-files-found: warn
 
       - name: E-Mail senden
         if: always()
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@v16
         with:
           server_address: ${{ secrets.SMTP_SERVER }}
           server_port: ${{ secrets.SMTP_PORT }}
           secure: false
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Playwright Report - ${{ steps.run_tests.outcome }}"
+          subject: "Playwright Report - ExitCode:${{ steps.run_tests.outputs.exit_code }}"
           to: ${{ secrets.MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
           html_body: file://mail-body.html
