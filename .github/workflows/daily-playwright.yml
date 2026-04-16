@@ -1,5 +1,3 @@
-Irgendwie ist mir das zu viel drum rum in der E-Mail, da ja in der action alles gespeichert wird, will ich das die email sich kurz fässt und zusätzlich solll der Test immer um 0 Uhr automatisch gemacht werden gib mir die ganze datei zurück
-
 name: Daily Playwright Test
 
 on:
