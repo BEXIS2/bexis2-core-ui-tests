@@ -21,7 +21,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     steps:
       - name: Repo auschecken
@@ -61,19 +61,18 @@ jobs:
 
       - name: Tests ausführen
         id: run_tests
+        continue-on-error: true
+        run: npx playwright test
+
+      - name: Mail-Inhalt erstellen
+        if: always()
         shell: bash
         run: |
-          npx playwright test
-          EXIT_CODE=$?
-          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
-          exit 0
-
-      - name: Einfache Mail erstellen
-        if: always()
-        run: |
-          if [ "${{ steps.run_tests.outputs.exit_code }}" = "0" ]; then
+          if [ "${{ steps.run_tests.outcome }}" = "success" ]; then
+            echo "MAIL_SUBJECT=Playwright Test - success" >> "$GITHUB_ENV"
             echo "<h2>Playwright Test</h2><p>Status: ✅ Erfolgreich</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
           else
+            echo "MAIL_SUBJECT=Playwright Test - failure" >> "$GITHUB_ENV"
             echo "<h2>Playwright Test</h2><p>Status: ❌ Fehlgeschlagen</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
           fi
 
@@ -96,13 +95,13 @@ jobs:
           secure: false
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Playwright Test - ${{ steps.run_tests.outputs.exit_code == '0' && 'success' || 'failure' }}"
+          subject: ${{ env.MAIL_SUBJECT }}
           to: ${{ secrets.MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
           html_body: file://mail-body.html
 
       - name: Workflow fehlschlagen lassen, wenn Tests fehlgeschlagen sind
-        if: always() && steps.run_tests.outputs.exit_code != '0'
+        if: steps.run_tests.outcome != 'success'
         run: |
           echo "Mindestens ein Playwright-Test ist fehlgeschlagen."
           echo "Bitte den Schritt 'Tests ausführen' oder die Artifacts prüfen."
