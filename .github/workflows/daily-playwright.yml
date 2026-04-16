@@ -238,11 +238,14 @@ jobs:
             }
 
             const hasProblems = failed > 0 || timedOut > 0 || interrupted > 0;
-            const statusText = hasProblems ? '❌ Fehler vorhanden' : '✅ Alles erfolgreich';
+            const status = hasProblems ? 'failure' : 'success';
 
             html += `<h2>Playwright Daily Run</h2>`;
-            html += `<p style="font-size:18px;"><b>${statusText}</b></p>`;
+            html += `<p><b>Status:</b> ${status}</p>`;
+            html += `<p><b>Repository:</b> ${escapeHtml(process.env.GITHUB_REPOSITORY || '')}</p>`;
             html += `<p><b>Run:</b> <a href="${runUrl}">${runUrl}</a></p>`;
+            html += `<p><b>Test-Step outcome:</b> ${escapeHtml(process.env.TEST_STEP_OUTCOME || '')}</p>`;
+            html += `<p><b>Test-Step conclusion:</b> ${escapeHtml(process.env.TEST_STEP_CONCLUSION || '')}</p>`;
 
             html += `<h3>Zusammenfassung</h3>`;
             html += `<ul>`;
@@ -258,20 +261,20 @@ jobs:
               html += renderTestList('Fehlgeschlagene Tests', failedTests);
               html += renderTestList('Timeout-Tests', timedOutTests);
               html += renderTestList('Unterbrochene Tests', interruptedTests);
-              html += `<p><b>Hinweis:</b> Zusätzliche Dateien liegen im Artifact <code>playwright-report</code>.</p>`;
+              html += `<p><b>Hinweis:</b> Zusätzliche Dateien wie Trace, Screenshot oder Video liegen im hochgeladenen Artifact <code>playwright-report</code> bzw. <code>test-results</code>.</p>`;
             } else {
               html += `<p>Alle ausgeführten Tests waren erfolgreich ✅</p>`;
             }
 
             if (skipped > 0) {
               html += `<h3>Hinweis zu Skipped</h3>`;
-              html += `<p>Es wurden ${skipped} Tests als skipped gemeldet (pro Browser mehrfach gezählt).</p>`;
+              html += `<p>Es wurden ${skipped} Tests als skipped gemeldet. Bei mehreren Playwright-Projekten wie Chromium, Firefox und WebKit kann diese Zahl deutlich höher wirken, weil Tests pro Browser separat im JSON auftauchen.</p>`;
               html += renderTestList('Skipped-Tests', skippedTests);
             }
           } else {
             html = `
               <h2>Playwright Daily Run</h2>
-              <p><b>❌ Fehler vorhanden</b></p>
+              <p><b>Status:</b> failure</p>
               <p>Die Datei <code>test-results.json</code> wurde nicht gefunden.</p>
               <p><b>Run:</b> <a href="${runUrl}">${runUrl}</a></p>
             `;
@@ -301,7 +304,7 @@ jobs:
           secure: false
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Playwright Daily Report - ${{ github.repository }}"
+          subject: "Playwright Daily Report - ${{ github.repository }} - TestStep:${{ steps.run_tests.outcome }}"
           to: ${{ secrets.MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
           html_body: file://mail-body.html
