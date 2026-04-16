@@ -20,7 +20,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
 
     steps:
@@ -31,9 +31,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
 
       - name: Dependencies installieren
         run: npm ci
+
+      - name: Playwright aktualisieren
+        run: npm install -D @playwright/test@latest
 
       - name: Playwright Browser installieren
         run: npx playwright install --with-deps
