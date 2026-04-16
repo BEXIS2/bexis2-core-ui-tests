@@ -30,7 +30,7 @@ jobs:
       - name: Node einrichten
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Dependencies installieren
         run: npm ci
@@ -58,230 +58,16 @@ jobs:
       - name: Tests ausführen
         id: run_tests
         continue-on-error: true
-        env:
-          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results.json
-        run: |
-          npx playwright test || true
+        run: npx playwright test
 
-      - name: Mail Summary aus JSON bauen
+      - name: Einfache Mail erstellen
         if: always()
-        env:
-          TEST_STEP_OUTCOME: ${{ steps.run_tests.outcome }}
-          TEST_STEP_CONCLUSION: ${{ steps.run_tests.conclusion }}
         run: |
-          node <<'EOF'
-          const fs = require('fs');
-
-          const runUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-
-          function escapeHtml(str = '') {
-            return String(str)
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;');
-          }
-
-          function formatLocation(loc) {
-            if (!loc) return 'Unbekannt';
-            const file = loc.file || 'unbekannte Datei';
-            const line = loc.line ?? '?';
-            const column = loc.column ?? '?';
-            return `${file}:${line}:${column}`;
-          }
-
-          function formatError(test, result) {
-            const err = result?.error || test?.error || {};
-            const message = err.message || 'Ohne Fehlermeldung';
-            const stack = err.stack || '';
-            return stack ? `${message}\n\n${stack}` : message;
-          }
-
-          function getProjectName(test, result) {
-            return (
-              result?.projectName ||
-              test?.projectName ||
-              test?.project?.name ||
-              'Unbekannt'
-            );
-          }
-
-          function collectAttachments(result) {
-            const attachments = Array.isArray(result?.attachments) ? result.attachments : [];
-            return attachments.map(att => ({
-              name: att.name || 'attachment',
-              path: att.path || '',
-              contentType: att.contentType || ''
-            }));
-          }
-
-          let total = 0;
-          let passed = 0;
-          let failed = 0;
-          let skipped = 0;
-          let timedOut = 0;
-          let interrupted = 0;
-
-          const failedTests = [];
-          const timedOutTests = [];
-          const interruptedTests = [];
-          const skippedTests = [];
-
-          function visitSuite(suite, parents = []) {
-            if (!suite) return;
-
-            const nextParents = suite.title ? [...parents, suite.title] : parents;
-
-            if (Array.isArray(suite.specs)) {
-              for (const spec of suite.specs) {
-                const specPath = [...nextParents, spec.title].filter(Boolean).join(' › ');
-
-                if (!Array.isArray(spec.tests)) continue;
-
-                for (const test of spec.tests) {
-                  const results = Array.isArray(test.results) ? test.results : [];
-                  const lastResult = results[results.length - 1] || {};
-                  const status = lastResult.status || test.status || 'unknown';
-
-                  total++;
-
-                  const entry = {
-                    title: specPath,
-                    project: getProjectName(test, lastResult),
-                    location: formatLocation(lastResult.location || test.location),
-                    error: formatError(test, lastResult),
-                    retry: lastResult.retry ?? 0,
-                    duration: lastResult.duration ?? 0,
-                    attachments: collectAttachments(lastResult),
-                    stdout: Array.isArray(lastResult.stdout)
-                      ? lastResult.stdout.map(x => typeof x === 'string' ? x : x.text || '').join('\n')
-                      : '',
-                    stderr: Array.isArray(lastResult.stderr)
-                      ? lastResult.stderr.map(x => typeof x === 'string' ? x : x.text || '').join('\n')
-                      : '',
-                  };
-
-                  if (status === 'passed') {
-                    passed++;
-                  } else if (status === 'failed') {
-                    failed++;
-                    failedTests.push(entry);
-                  } else if (status === 'skipped') {
-                    skipped++;
-                    skippedTests.push(entry);
-                  } else if (status === 'timedOut') {
-                    timedOut++;
-                    timedOutTests.push(entry);
-                  } else if (status === 'interrupted') {
-                    interrupted++;
-                    interruptedTests.push(entry);
-                  }
-                }
-              }
-            }
-
-            if (Array.isArray(suite.suites)) {
-              for (const child of suite.suites) {
-                visitSuite(child, nextParents);
-              }
-            }
-          }
-
-          function renderTestList(title, tests) {
-            if (!tests.length) return '';
-
-            let html = `<h3>${escapeHtml(title)}</h3><ol>`;
-
-            for (const test of tests.slice(0, 20)) {
-              html += `<li>`;
-              html += `<b>${escapeHtml(test.title)}</b><br>`;
-              html += `<b>Projekt/Browser:</b> ${escapeHtml(test.project)}<br>`;
-              html += `<b>Datei:</b> <code>${escapeHtml(test.location)}</code><br>`;
-              html += `<b>Retry:</b> ${escapeHtml(String(test.retry))}<br>`;
-              html += `<b>Dauer:</b> ${escapeHtml(String(test.duration))} ms<br>`;
-
-              if (test.attachments.length > 0) {
-                html += `<b>Attachments:</b><ul>`;
-                for (const att of test.attachments) {
-                  html += `<li>${escapeHtml(att.name)}${att.path ? ` - <code>${escapeHtml(att.path)}</code>` : ''}${att.contentType ? ` (${escapeHtml(att.contentType)})` : ''}</li>`;
-                }
-                html += `</ul>`;
-              }
-
-              html += `<b>Fehler:</b><pre>${escapeHtml(test.error)}</pre>`;
-
-              if (test.stdout) {
-                html += `<b>stdout:</b><pre>${escapeHtml(test.stdout)}</pre>`;
-              }
-
-              if (test.stderr) {
-                html += `<b>stderr:</b><pre>${escapeHtml(test.stderr)}</pre>`;
-              }
-
-              html += `</li>`;
-            }
-
-            html += `</ol>`;
-            return html;
-          }
-
-          let html = '';
-
-          if (fs.existsSync('test-results.json')) {
-            const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
-
-            if (report?.suites) {
-              for (const suite of report.suites) {
-                visitSuite(suite, []);
-              }
-            }
-
-            const hasProblems = failed > 0 || timedOut > 0 || interrupted > 0;
-            const status = hasProblems ? 'failure' : 'success';
-
-            html += `<h2>Playwright Daily Run</h2>`;
-            html += `<p><b>Status:</b> ${status}</p>`;
-            html += `<p><b>Repository:</b> ${escapeHtml(process.env.GITHUB_REPOSITORY || '')}</p>`;
-            html += `<p><b>Run:</b> <a href="${runUrl}">${runUrl}</a></p>`;
-            html += `<p><b>Test-Step outcome:</b> ${escapeHtml(process.env.TEST_STEP_OUTCOME || '')}</p>`;
-            html += `<p><b>Test-Step conclusion:</b> ${escapeHtml(process.env.TEST_STEP_CONCLUSION || '')}</p>`;
-
-            html += `<h3>Zusammenfassung</h3>`;
-            html += `<ul>`;
-            html += `<li><b>Gesamt:</b> ${total}</li>`;
-            html += `<li><b>Passed:</b> ${passed}</li>`;
-            html += `<li><b>Failed:</b> ${failed}</li>`;
-            html += `<li><b>Skipped:</b> ${skipped}</li>`;
-            html += `<li><b>Timed out:</b> ${timedOut}</li>`;
-            html += `<li><b>Interrupted:</b> ${interrupted}</li>`;
-            html += `</ul>`;
-
-            if (hasProblems) {
-              html += renderTestList('Fehlgeschlagene Tests', failedTests);
-              html += renderTestList('Timeout-Tests', timedOutTests);
-              html += renderTestList('Unterbrochene Tests', interruptedTests);
-              html += `<p><b>Hinweis:</b> Zusätzliche Dateien wie Trace, Screenshot oder Video liegen im hochgeladenen Artifact <code>playwright-report</code> bzw. <code>test-results</code>.</p>`;
-            } else {
-              html += `<p>Alle ausgeführten Tests waren erfolgreich ✅</p>`;
-            }
-
-            if (skipped > 0) {
-              html += `<h3>Hinweis zu Skipped</h3>`;
-              html += `<p>Es wurden ${skipped} Tests als skipped gemeldet. Bei mehreren Playwright-Projekten wie Chromium, Firefox und WebKit kann diese Zahl deutlich höher wirken, weil Tests pro Browser separat im JSON auftauchen.</p>`;
-              html += renderTestList('Skipped-Tests', skippedTests);
-            }
-          } else {
-            html = `
-              <h2>Playwright Daily Run</h2>
-              <p><b>Status:</b> failure</p>
-              <p>Die Datei <code>test-results.json</code> wurde nicht gefunden.</p>
-              <p><b>Run:</b> <a href="${runUrl}">${runUrl}</a></p>
-            `;
-          }
-
-          fs.writeFileSync('mail-body.html', html, 'utf8');
-          EOF
+          if [ "${{ steps.run_tests.outcome }}" = "success" ]; then
+            echo "<h2>Playwright Test</h2><p>Status: ✅ Erfolgreich</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
+          else
+            echo "<h2>Playwright Test</h2><p>Status: ❌ Fehlgeschlagen</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
+          fi
 
       - name: Report hochladen
         uses: actions/upload-artifact@v4
@@ -291,8 +77,6 @@ jobs:
           path: |
             playwright-report
             test-results
-            test-results.json
-            mail-body.html
           retention-days: 7
 
       - name: E-Mail senden
@@ -304,7 +88,11 @@ jobs:
           secure: false
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Playwright Daily Report - ${{ github.repository }} - TestStep:${{ steps.run_tests.outcome }}"
+          subject: "Playwright Test - ${{ steps.run_tests.outcome }}"
           to: ${{ secrets.MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
           html_body: file://mail-body.html
+
+      - name: Workflow fehlschlagen lassen, wenn Tests fehlgeschlagen sind
+        if: steps.run_tests.outcome != 'success'
+        run: exit 1
