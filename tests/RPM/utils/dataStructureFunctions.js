@@ -150,8 +150,8 @@ async function createDataStructure(page, titleName) {
     // Wait for 500 milliseconds
     await page.waitForTimeout(500);
 
-    // Click on make a part of primary key 
-    await page.locator('label:has(input[name="isKey"])').click();
+    // Click on to not make a part of primary key 
+    // await page.locator('label:has(input[name="isKey"])').click();
 
     // Fill in the name input
     await page.locator('input[id=name-0]').fill(titleName);
@@ -335,9 +335,6 @@ async function editDataStructure(page) {
 
     // Wait for 500 milliseconds
     await page.waitForTimeout(500);
-
-    // Click on make a part of primary key 
-    await page.click('text=Value can be optional');
 
     // Click the on data type dropdown
     await page.click('div.value-container.svelte-u3g5ju > input.svelte-u3g5ju');

@@ -10,7 +10,7 @@ const user = "admin";
 const password = "123456";
 
 export const login = async (page: Page) => {
-	await page.goto(`${host}/account/login`);
+	await page.goto(`${host}/Account/Login`);
 	await page.locator('#UserName').fill(user);
 	await page.locator('#Password').fill(password);
 	await page.locator('input[type=submit]').click();
