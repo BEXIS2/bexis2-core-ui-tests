@@ -2,19 +2,17 @@ name: Daily Playwright Test
 
 on:
   schedule:
-    - cron: "0 22 * * *" # täglich 22:00 UTC
+    - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:
       host:
         description: "Zu testende Adresse"
         required: false
         default: ""
-
       account_username:
         description: "Benutzername"
         required: false
         default: ""
-
       account_password:
         description: "Passwort"
         required: false
@@ -71,39 +69,16 @@ jobs:
         shell: bash
         run: |
           if [ "${{ steps.run_tests.outcome }}" = "success" ]; then
-            echo "MAIL_SUBJECT=Playwright Test - SUCCESS" >> "$GITHUB_ENV"
-
-            cat <<EOF > mail-body.html
-            <h2>✅ Playwright Test erfolgreich</h2>
-
-            <p>Alle Tests wurden erfolgreich ausgeführt.</p>
-
-            <p>
-              <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">
-                GitHub Action öffnen
-              </a>
-            </p>
-            EOF
-
+            echo "MAIL_SUBJECT=Playwright Test - success" >> "$GITHUB_ENV"
+            echo "<h2>Playwright Test</h2><p>Status: ✅ Erfolgreich</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
           else
-            echo "MAIL_SUBJECT=Playwright Test - FAILURE" >> "$GITHUB_ENV"
-
-            cat <<EOF > mail-body.html
-            <h2>❌ Playwright Test fehlgeschlagen</h2>
-
-            <p>Mindestens ein Test ist fehlgeschlagen.</p>
-
-            <p>
-              <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">
-                GitHub Action öffnen
-              </a>
-            </p>
-            EOF
+            echo "MAIL_SUBJECT=Playwright Test - failure" >> "$GITHUB_ENV"
+            echo "<h2>Playwright Test</h2><p>Status: ❌ Fehlgeschlagen</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
           fi
 
       - name: Report hochladen
-        if: always()
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: playwright-report
           path: |
@@ -118,23 +93,16 @@ jobs:
           server_address: ${{ secrets.SMTP_SERVER }}
           server_port: ${{ secrets.SMTP_PORT }}
           secure: false
-
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-
           subject: ${{ env.MAIL_SUBJECT }}
-
+          to: ${{ secrets.MAIL_TO }}, ${{ secrets.MAIL_TO_2 }}
           from: ${{ secrets.MAIL_FROM }}
-
-          to: ${{ secrets.MAIL_TO }}
-
-          # OPTIONAL:
-          # cc: ${{ secrets.MAIL_TO_2 }}
-
           html_body: file://mail-body.html
 
-      - name: Workflow fehlschlagen lassen wenn Tests fehlschlagen
+      - name: Workflow fehlschlagen lassen, wenn Tests fehlgeschlagen sind
         if: steps.run_tests.outcome != 'success'
         run: |
-          echo "Mindestens ein Test ist fehlgeschlagen."
+          echo "Mindestens ein Playwright-Test ist fehlgeschlagen."
+          echo "Bitte den Schritt 'Tests ausführen' oder die Artifacts prüfen."
           exit 1
