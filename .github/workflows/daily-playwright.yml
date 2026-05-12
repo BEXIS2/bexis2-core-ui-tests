@@ -2,7 +2,7 @@ name: Daily Playwright Test
 
 on:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: "0 22 * * *" # Täglich um 22:00 Uhr UTC (23:00 Uhr MEZ)
   workflow_dispatch:
     inputs:
       host:
