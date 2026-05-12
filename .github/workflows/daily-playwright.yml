@@ -96,7 +96,7 @@ jobs:
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: ${{ env.MAIL_SUBJECT }}
-          to: ${{ secrets.MAIL_TO }}
+          to: ${{ secrets.MAIL_TO }}, ${{ secrets.MAIL_TO_2 }}
           from: ${{ secrets.MAIL_FROM }}
           html_body: file://mail-body.html
 
