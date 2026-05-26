@@ -1,8 +1,8 @@
 name: Daily Playwright Test
 
 on:
-  # schedule:
-  #   - cron: "0 7 * * *"
+  schedule:
+    - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:
       host:
@@ -70,21 +70,41 @@ jobs:
         run: |
           if [ "${{ steps.run_tests.outcome }}" = "success" ]; then
             echo "MAIL_SUBJECT=Playwright Test - success" >> "$GITHUB_ENV"
-            echo "<h2>Playwright Test</h2><p>Status: ✅ Erfolgreich</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
+
+            echo "<h2>Playwright Test</h2>
+            <p>Status: ✅ Erfolgreich</p>
+            <p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
+
           else
             echo "MAIL_SUBJECT=Playwright Test - failure" >> "$GITHUB_ENV"
-            echo "<h2>Playwright Test</h2><p>Status: ❌ Fehlgeschlagen</p><p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
+
+            echo "<h2>Playwright Test</h2>
+            <p>Status: ❌ Fehlgeschlagen</p>
+            <p><a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>GitHub Action öffnen</a></p>" > mail-body.html
           fi
 
-      - name: Report hochladen
+      - name: Nur fehlgeschlagene Playwright-Dateien sammeln
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p failed-playwright-files
+
+          find test-results -type f \( \
+            -name "*.png" -o \
+            -name "error-context.md" \
+          \) -print0 | while IFS= read -r -d '' file; do
+            mkdir -p "failed-playwright-files/$(dirname "$file")"
+            cp "$file" "failed-playwright-files/$file"
+          done
+
+      - name: Fehlgeschlagene Screenshots hochladen
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
-          path: |
-            playwright-report
-            test-results
+          name: playwright-failed-files
+          path: failed-playwright-files
           retention-days: 7
+          if-no-files-found: ignore
 
       - name: E-Mail senden
         if: always()
@@ -104,5 +124,5 @@ jobs:
         if: steps.run_tests.outcome != 'success'
         run: |
           echo "Mindestens ein Playwright-Test ist fehlgeschlagen."
-          echo "Bitte den Schritt 'Tests ausführen' oder die Artifacts prüfen."
+          echo "Bitte die Artifacts prüfen."
           exit 1
