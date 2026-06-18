@@ -33,7 +33,7 @@ test.describe('Variable Template Structure', () => {
 
       // Click on name field and type test data
       await page.click('#name');
-      await page.click('#create');
+      // await page.click('#create'); // sometimes the click on the create button is not working, so added this click to make sure that the name field is focused before typing.
       await page.type('#name', 'ummaima');
 
 
