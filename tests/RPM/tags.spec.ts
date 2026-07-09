@@ -92,261 +92,266 @@ test.describe('Tags / Application Settings and Tag Info', () => {
   };
 
   // ---------------------------
-  // CASE 1 - MAJOR - ACTIVATE SHOW NOTE
-  // ---------------------------
-  test('Case 1 - Create Major version - Activate Show Note - Save - Wait for Notifcation', async () => {
-    const id = await createDataset();
+// CASE 1 - MAJOR - ACTIVATE SHOW NOTE
+// ---------------------------
+test('Case 1 - Create Major version - Activate Show Note - Save - Wait for Notifcation', async () => {
+  const id = await createDataset();
 
-    await page.goto(`${host}/ddm/taginfo/?id=${id}`);
+  await page.goto(`${host}/ddm/taginfo/?id=${id}`);
 
-    const majorButton = page.locator(
-      'button[title="Create new major version. All untagged versions until this will belong to this major version."]'
-    );
+  const majorButton = page.locator(
+    'button[title="Create new major version. All untagged versions until this will belong to this major version."]'
+  );
 
-    await expect(majorButton).toBeVisible();
-    await majorButton.click();
+  await expect(majorButton).toBeVisible();
+  await majorButton.click();
 
-    let toast = page.locator('[data-testid="toast"]').last();
-    await expect(toast).toContainText('Release Tag is generated.', {
-      timeout: 5000,
-    });
-
-    const showTagInfoSwitch = page.locator(
-      `#showTagInfo-${id}`
-    ).locator('xpath=ancestor::div[@role="switch"]');
-
-    await expect(showTagInfoSwitch).toBeVisible();
-    await showTagInfoSwitch.click();
-
-    const saveButton = page.locator(`#saveTagInfo-${id}`);
-
-    await expect(saveButton).toBeVisible();
-    await saveButton.click();
-
-    toast = page.locator('[data-testid="toast"]').last();
-    await toast.waitFor({ state: 'visible', timeout: 5000 });
-
-    await expect(toast).toContainText('Release tag changes are saved.', {
-      timeout: 5000,
-    });
+  let toast = page.locator('[data-testid="toast"]').last();
+  await expect(toast).toContainText('Release Tag is generated.', {
+    timeout: 5000,
   });
 
+  const showTagInfoSwitch = page
+    .locator('[id^="showTagInfo-"]')
+    .first()
+    .locator('xpath=ancestor::div[@role="switch"]');
 
-  // ---------------------------
-  // CASE 2 - MAJOR - ACTIVATE SHOW NOTE & PUBLISH TAG
-  // ---------------------------
-  test('Case 2 - Create Major version - Activate Show Note & Publish Tag - Save - Wait for Notifcation', async () => {
-    const id = await createDataset();
+  await expect(showTagInfoSwitch).toBeVisible();
+  await showTagInfoSwitch.click();
 
-    await page.goto(`${host}/ddm/taginfo/?id=${id}`);
+  const saveButton = page.locator('[id^="saveTagInfo-"]').first();
 
-    const majorButton = page.locator(
-      'button[title="Create new major version. All untagged versions until this will belong to this major version."]'
-    );
+  await expect(saveButton).toBeVisible();
+  await saveButton.click();
 
-    await expect(majorButton).toBeVisible();
-    await majorButton.click();
+  toast = page.locator('[data-testid="toast"]').last();
+  await toast.waitFor({ state: 'visible', timeout: 5000 });
 
-    let toast = page.locator('[data-testid="toast"]').last();
-    await expect(toast).toContainText('Release Tag is generated.', {
-      timeout: 5000,
-    });
+  await expect(toast).toContainText('Release tag changes are saved.', {
+    timeout: 5000,
+  });
+});
 
-    const showTagInfoSwitch = page.locator(
-      `#showTagInfo-${id}`
-    ).locator('xpath=ancestor::div[@role="switch"]');
+// ---------------------------
+// CASE 2 - MAJOR - ACTIVATE SHOW NOTE & PUBLISH TAG
+// ---------------------------
+test('Case 2 - Create Major version - Activate Show Note & Publish Tag - Save - Wait for Notifcation', async () => {
+  const id = await createDataset();
 
-    await expect(showTagInfoSwitch).toBeVisible();
-    await showTagInfoSwitch.click();
+  await page.goto(`${host}/ddm/taginfo/?id=${id}`);
 
-    const publishTagSwitch = page.locator(
-      `#publish-${id}`
-    ).locator('xpath=ancestor::div[@role="switch"]');
+  const majorButton = page.locator(
+    'button[title="Create new major version. All untagged versions until this will belong to this major version."]'
+  );
 
-    await expect(publishTagSwitch).toBeVisible();
-    await publishTagSwitch.click();
+  await expect(majorButton).toBeVisible();
+  await majorButton.click();
 
-    const saveButton = page.locator(`#saveTagInfo-${id}`);
-
-    await expect(saveButton).toBeVisible();
-    await saveButton.click();
-
-    toast = page.locator('[data-testid="toast"]').last();
-    await toast.waitFor({ state: 'visible', timeout: 5000 });
-
-    await expect(toast).toContainText('Release tag changes are saved.', {
-      timeout: 5000,
-    });
+  let toast = page.locator('[data-testid="toast"]').last();
+  await expect(toast).toContainText('Release Tag is generated.', {
+    timeout: 5000,
   });
 
-  // ---------------------------
-  // CASE 3 - MAJOR - ACTIVATE PUBLISH TAG ONLY
-  // ---------------------------
-  test('Case 3 - Create Major version - Activate Publish Tag - Save - Wait for Notification', async () => {
-    const id = await createDataset();
+  const showTagInfoSwitch = page
+    .locator('[id^="showTagInfo-"]')
+    .first()
+    .locator('xpath=ancestor::div[@role="switch"]');
 
-    await page.goto(`${host}/ddm/taginfo/?id=${id}`);
+  await expect(showTagInfoSwitch).toBeVisible();
+  await showTagInfoSwitch.click();
 
-    const majorButton = page.locator(
-      'button[title="Create new major version. All untagged versions until this will belong to this major version."]'
-    );
+  const publishTagSwitch = page
+    .locator('[id^="publish-"]')
+    .first()
+    .locator('xpath=ancestor::div[@role="switch"]');
 
-    await expect(majorButton).toBeVisible();
-    await majorButton.click();
+  await expect(publishTagSwitch).toBeVisible();
+  await publishTagSwitch.click();
 
-    let toast = page.locator('[data-testid="toast"]').last();
-    await expect(toast).toContainText('Release Tag is generated.', {
-      timeout: 5000,
-    });
+  const saveButton = page.locator('[id^="saveTagInfo-"]').first();
 
-    const publishTagSwitch = page.locator(
-      `#publish-${id}`
-    ).locator('xpath=ancestor::div[@role="switch"]');
+  await expect(saveButton).toBeVisible();
+  await saveButton.click();
 
-    await expect(publishTagSwitch).toBeVisible();
-    await publishTagSwitch.click();
+  toast = page.locator('[data-testid="toast"]').last();
+  await toast.waitFor({ state: 'visible', timeout: 5000 });
 
-    const saveButton = page.locator(`#saveTagInfo-${id}`);
+  await expect(toast).toContainText('Release tag changes are saved.', {
+    timeout: 5000,
+  });
+});
 
-    await expect(saveButton).toBeVisible();
-    await saveButton.click();
+// ---------------------------
+// CASE 3 - MAJOR - ACTIVATE PUBLISH TAG ONLY
+// ---------------------------
+test('Case 3 - Create Major version - Activate Publish Tag - Save - Wait for Notification', async () => {
+  const id = await createDataset();
 
-    toast = page.locator('[data-testid="toast"]').last();
-    await toast.waitFor({ state: 'visible', timeout: 5000 });
+  await page.goto(`${host}/ddm/taginfo/?id=${id}`);
 
-    await expect(toast).toContainText('Release tag changes are saved.', {
-      timeout: 5000,
-    });
+  const majorButton = page.locator(
+    'button[title="Create new major version. All untagged versions until this will belong to this major version."]'
+  );
+
+  await expect(majorButton).toBeVisible();
+  await majorButton.click();
+
+  let toast = page.locator('[data-testid="toast"]').last();
+  await expect(toast).toContainText('Release Tag is generated.', {
+    timeout: 5000,
   });
 
-  // ---------------------------
-  // CASE 4 - MINOR - ACTIVATE SHOW NOTE
-  // ---------------------------
-  test('Case 4 - Create Minor version - Activate Show Note - Save - Wait for Notification', async () => {
-    const id = await createDataset();
+  const publishTagSwitch = page
+    .locator('[id^="publish-"]')
+    .first()
+    .locator('xpath=ancestor::div[@role="switch"]');
 
-    await page.goto(`${host}/ddm/taginfo/?id=${id}`);
+  await expect(publishTagSwitch).toBeVisible();
+  await publishTagSwitch.click();
 
-    const minorButton = page.locator(
-      'button[title="Create new minor version. All untagged versions until this will belong to this minor version."]'
-    );
+  const saveButton = page.locator('[id^="saveTagInfo-"]').first();
 
-    await expect(minorButton).toBeVisible();
-    await minorButton.click();
+  await expect(saveButton).toBeVisible();
+  await saveButton.click();
 
-    let toast = page.locator('[data-testid="toast"]').last();
-    await expect(toast).toContainText('Release Tag is generated.', {
-      timeout: 5000,
-    });
+  toast = page.locator('[data-testid="toast"]').last();
+  await toast.waitFor({ state: 'visible', timeout: 5000 });
 
-    const showTagInfoSwitch = page.locator(
-      `#showTagInfo-${id}`
-    ).locator('xpath=ancestor::div[@role="switch"]');
+  await expect(toast).toContainText('Release tag changes are saved.', {
+    timeout: 5000,
+  });
+});
 
-    await expect(showTagInfoSwitch).toBeVisible();
-    await showTagInfoSwitch.click();
+// ---------------------------
+// CASE 4 - MINOR - ACTIVATE SHOW NOTE
+// ---------------------------
+test('Case 4 - Create Minor version - Activate Show Note - Save - Wait for Notification', async () => {
+  const id = await createDataset();
 
-    const saveButton = page.locator(`#saveTagInfo-${id}`);
+  await page.goto(`${host}/ddm/taginfo/?id=${id}`);
 
-    await expect(saveButton).toBeVisible();
-    await saveButton.click();
+  const minorButton = page.locator(
+    'button[title="Create new minor version. All untagged versions until this will belong to this minor version."]'
+  );
 
-    toast = page.locator('[data-testid="toast"]').last();
-    await toast.waitFor({ state: 'visible', timeout: 5000 });
+  await expect(minorButton).toBeVisible();
+  await minorButton.click();
 
-    await expect(toast).toContainText('Release tag changes are saved.', {
-      timeout: 5000,
-    });
+  let toast = page.locator('[data-testid="toast"]').last();
+  await expect(toast).toContainText('Release Tag is generated.', {
+    timeout: 5000,
   });
 
+  const showTagInfoSwitch = page
+    .locator('[id^="showTagInfo-"]')
+    .first()
+    .locator('xpath=ancestor::div[@role="switch"]');
 
-  // ---------------------------
-  // CASE 5 - MINOR - ACTIVATE SHOW NOTE & PUBLISH TAG
-  // ---------------------------
-  test('Case 5 - Create Minor version - Activate Show Note & Publish Tag - Save - Wait for Notification', async () => {
-    const id = await createDataset();
+  await expect(showTagInfoSwitch).toBeVisible();
+  await showTagInfoSwitch.click();
 
-    await page.goto(`${host}/ddm/taginfo/?id=${id}`);
+  const saveButton = page.locator('[id^="saveTagInfo-"]').first();
 
-    const minorButton = page.locator(
-      'button[title="Create new minor version. All untagged versions until this will belong to this minor version."]'
-    );
+  await expect(saveButton).toBeVisible();
+  await saveButton.click();
 
-    await expect(minorButton).toBeVisible();
-    await minorButton.click();
+  toast = page.locator('[data-testid="toast"]').last();
+  await toast.waitFor({ state: 'visible', timeout: 5000 });
 
-    let toast = page.locator('[data-testid="toast"]').last();
-    await expect(toast).toContainText('Release Tag is generated.', {
-      timeout: 5000,
-    });
+  await expect(toast).toContainText('Release tag changes are saved.', {
+    timeout: 5000,
+  });
+});
 
-    const showTagInfoSwitch = page.locator(
-      `#showTagInfo-${id}`
-    ).locator('xpath=ancestor::div[@role="switch"]');
+// ---------------------------
+// CASE 5 - MINOR - ACTIVATE SHOW NOTE & PUBLISH TAG
+// ---------------------------
+test('Case 5 - Create Minor version - Activate Show Note & Publish Tag - Save - Wait for Notification', async () => {
+  const id = await createDataset();
 
-    await expect(showTagInfoSwitch).toBeVisible();
-    await showTagInfoSwitch.click();
+  await page.goto(`${host}/ddm/taginfo/?id=${id}`);
 
-    const publishTagSwitch = page.locator(
-      `#publish-${id}`
-    ).locator('xpath=ancestor::div[@role="switch"]');
+  const minorButton = page.locator(
+    'button[title="Create new minor version. All untagged versions until this will belong to this minor version."]'
+  );
 
-    await expect(publishTagSwitch).toBeVisible();
-    await publishTagSwitch.click();
+  await expect(minorButton).toBeVisible();
+  await minorButton.click();
 
-    const saveButton = page.locator(`#saveTagInfo-${id}`);
-
-    await expect(saveButton).toBeVisible();
-    await saveButton.click();
-
-    toast = page.locator('[data-testid="toast"]').last();
-    await toast.waitFor({ state: 'visible', timeout: 5000 });
-
-    await expect(toast).toContainText('Release tag changes are saved.', {
-      timeout: 5000,
-    });
+  let toast = page.locator('[data-testid="toast"]').last();
+  await expect(toast).toContainText('Release Tag is generated.', {
+    timeout: 5000,
   });
 
+  const showTagInfoSwitch = page
+    .locator('[id^="showTagInfo-"]')
+    .first()
+    .locator('xpath=ancestor::div[@role="switch"]');
 
-  // ---------------------------
-  // CASE 6 - MINOR - ACTIVATE PUBLISH TAG ONLY
-  // ---------------------------
-  test('Case 6 - Create Minor version - Activate Publish Tag - Save - Wait for Notification', async () => {
-    const id = await createDataset();
+  await expect(showTagInfoSwitch).toBeVisible();
+  await showTagInfoSwitch.click();
 
-    await page.goto(`${host}/ddm/taginfo/?id=${id}`);
+  const publishTagSwitch = page
+    .locator('[id^="publish-"]')
+    .first()
+    .locator('xpath=ancestor::div[@role="switch"]');
 
-    const minorButton = page.locator(
-      'button[title="Create new minor version. All untagged versions until this will belong to this minor version."]'
-    );
+  await expect(publishTagSwitch).toBeVisible();
+  await publishTagSwitch.click();
 
-    await expect(minorButton).toBeVisible();
-    await minorButton.click();
+  const saveButton = page.locator('[id^="saveTagInfo-"]').first();
 
-    let toast = page.locator('[data-testid="toast"]').last();
-    await expect(toast).toContainText('Release Tag is generated.', {
-      timeout: 5000,
-    });
+  await expect(saveButton).toBeVisible();
+  await saveButton.click();
 
-    const publishTagSwitch = page.locator(
-      `#publish-${id}`
-    ).locator('xpath=ancestor::div[@role="switch"]');
+  toast = page.locator('[data-testid="toast"]').last();
+  await toast.waitFor({ state: 'visible', timeout: 5000 });
 
-    await expect(publishTagSwitch).toBeVisible();
-    await publishTagSwitch.click();
-
-    const saveButton = page.locator(`#saveTagInfo-${id}`);
-
-    await expect(saveButton).toBeVisible();
-    await saveButton.click();
-
-    toast = page.locator('[data-testid="toast"]').last();
-    await toast.waitFor({ state: 'visible', timeout: 5000 });
-
-    await expect(toast).toContainText('Release tag changes are saved.', {
-      timeout: 5000,
-    });
+  await expect(toast).toContainText('Release tag changes are saved.', {
+    timeout: 5000,
   });
+});
+
+// ---------------------------
+// CASE 6 - MINOR - ACTIVATE PUBLISH TAG ONLY
+// ---------------------------
+test('Case 6 - Create Minor version - Activate Publish Tag - Save - Wait for Notification', async () => {
+  const id = await createDataset();
+
+  await page.goto(`${host}/ddm/taginfo/?id=${id}`);
+
+  const minorButton = page.locator(
+    'button[title="Create new minor version. All untagged versions until this will belong to this minor version."]'
+  );
+
+  await expect(minorButton).toBeVisible();
+  await minorButton.click();
+
+  let toast = page.locator('[data-testid="toast"]').last();
+  await expect(toast).toContainText('Release Tag is generated.', {
+    timeout: 5000,
+  });
+
+  const publishTagSwitch = page
+    .locator('[id^="publish-"]')
+    .first()
+    .locator('xpath=ancestor::div[@role="switch"]');
+
+  await expect(publishTagSwitch).toBeVisible();
+  await publishTagSwitch.click();
+
+  const saveButton = page.locator('[id^="saveTagInfo-"]').first();
+
+  await expect(saveButton).toBeVisible();
+  await saveButton.click();
+
+  toast = page.locator('[data-testid="toast"]').last();
+  await toast.waitFor({ state: 'visible', timeout: 5000 });
+
+  await expect(toast).toContainText('Release tag changes are saved.', {
+    timeout: 5000,
+  });
+});
 
   // ---------------------------
   // CLEANUP - PURGE ALLE DATASETS
