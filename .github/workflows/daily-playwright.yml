@@ -36,7 +36,7 @@ jobs:
     # Enthält Chromium, Firefox, WebKit und alle benötigten
     # Linux-Systemabhängigkeiten.
     container:
-      image: mcr.microsoft.com/playwright:v1.62.0-noble
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
       options: --user 1001 --ipc=host
 
     # Innerhalb eines Job-Containers wäre der Standard sonst "sh".
@@ -70,7 +70,7 @@ jobs:
       # Docker-Image und npm-Paket müssen dieselbe Version verwenden.
       - name: Playwright-Version prüfen
         run: |
-          EXPECTED_VERSION="1.62.0"
+          EXPECTED_VERSION="1.61.0"
 
           INSTALLED_VERSION="$(
             node -p "require('./node_modules/@playwright/test/package.json').version"
