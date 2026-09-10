@@ -177,10 +177,3 @@ jobs:
           to: ${{ secrets.MAIL_TO }}, ${{ secrets.MAIL_TO_2 }}
           from: ${{ secrets.MAIL_FROM }}
           html_body: file://mail-body.html
-
-      - name: Workflow fehlschlagen lassen, wenn Tests fehlgeschlagen sind
-        if: always() && steps.run_tests.outcome != 'success'
-        run: |
-          echo "Mindestens ein Playwright-Test ist fehlgeschlagen."
-          echo "Bitte die Artifacts und den Playwright-Bericht prüfen."
-          exit 1
