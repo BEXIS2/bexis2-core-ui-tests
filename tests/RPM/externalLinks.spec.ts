@@ -1,100 +1,125 @@
-import { test, expect } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 
-import { login, host } from '../shared';
-const { checkTitle } = require('./utils/uniqueFunction');
+import { gotoApp, login } from '../shared';
 
-const { checkExternalLink, createExternalLink, findExternalLink, deleteExternalLink, editExternalLink, findEditedExternalLink } = require('./utils/externalLinkFunctions');
+const {
+  checkExternalLink,
+  cleanupExternalLink,
+  createExternalLink,
+  deleteExternalLink,
+  editExternalLink,
+  findEditedExternalLink,
+  findExternalLink,
+} = require('./utils/externalLinkFunctions');
 
-// Annotate entire file as serial.
-test.describe.configure({ mode: 'serial' });
+const route = '/rpm/externallink';
+const runId = `${Date.now()}-${process.pid}`;
+
+function resourceName(prefix: string, testInfo: TestInfo) {
+  return `${prefix}-${runId}-${testInfo.workerIndex}-${testInfo.retry}`;
+}
 
 test.describe('External Links', () => {
-  // Declare page outside of the test hooks so it's accessible by all tests.
-  let page: Page;
+  const pendingCleanup = new Set<string>();
 
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage(); // Create new page
-    await login(page); // Login
-    await page.goto(`${host}/rpm/externallink`); // Go to External Link Manager page
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+    await gotoApp(page, route, '#create');
   });
 
-  test.afterAll(async () => {
-    await page.close(); // Close the page after all tests
+  test.afterAll(async ({ browser }, testInfo) => {
+    if (pendingCleanup.size === 0) return;
+
+    testInfo.setTimeout(Math.max(120_000, 30_000 + pendingCleanup.size * 45_000));
+    const cleanupErrors: string[] = [];
+    let cleanupPage: Page | undefined;
+
+    try {
+      cleanupPage = await browser.newPage();
+      await login(cleanupPage);
+
+      for (const linkName of [...pendingCleanup]) {
+        try {
+          await cleanupExternalLink(cleanupPage, linkName);
+          pendingCleanup.delete(linkName);
+        } catch (error) {
+          cleanupErrors.push(`${linkName}: ${error}`);
+        }
+      }
+    } catch (error) {
+      cleanupErrors.push(`cleanup setup: ${error}`);
+    } finally {
+      if (cleanupPage && !cleanupPage.isClosed()) {
+        try {
+          await cleanupPage.close();
+        } catch (error) {
+          cleanupErrors.push(`cleanup page close: ${error}`);
+        }
+      }
+    }
+
+    expect(cleanupErrors, cleanupErrors.join('\n')).toEqual([]);
+    expect([...pendingCleanup], 'External Links remained after fallback cleanup').toEqual([]);
   });
 
-  // Unique name for the External Link
   test.describe('Iterations for fields validation', () => {
-    const linkIterate = `test_iterate-${+Date.now()}`;
-    // test('Check title ', async () => {
-    //   //Check with title name
-    //   await checkTitle(page, 'External Link', '.w-full >> .table.table-compact', 'h1.h1');
-    // });
-
-    test.slow
-    test('Check with name field and has type', async () => {
-      await checkExternalLink(page, linkIterate, "link", "", "")
+    test('Check with name field and has type', async ({ page }) => {
+      await checkExternalLink(page, `test_iterate-${runId}-type`, 'link', '', '');
     });
 
-    test('Check with name field, has type and prefix', async () => {
-      await checkExternalLink(page, linkIterate, "link", "dwc", "")
+    test('Check with name field, has type and prefix', async ({ page }) => {
+      await checkExternalLink(page, `test_iterate-${runId}-prefix`, 'link', 'dwc', '');
     });
 
-    test('Check with name field and  has URI', async () => {
-      await checkExternalLink(page, linkIterate, "", "", "test@testing.com")
-      // await findExternalLink(page, linkIterate)
-      // await deleteExternalLink(page, linkIterate)
+    test('Check with name field and has URI', async ({ page }) => {
+      await checkExternalLink(page, `test_iterate-${runId}-uri`, '', '', 'test@testing.com');
     });
-
   });
 
-  test.describe('Create new External Link', () => {
-    const externalLink = `test_new-${+Date.now()}`;
-    // test('should match the expected title', async () => {
-    //   await checkTitle(page, 'External Link', '.w-full >> .table.table-compact', 'h1.h1');
-    // });
+  test('Create, find and delete External Link', async ({ page }, testInfo) => {
+    test.slow();
+    const externalLink = resourceName('test_new', testInfo);
+    pendingCleanup.add(externalLink);
 
-    test('Create External Link', async () => {
+    await test.step('Create External Link', async () => {
       await createExternalLink(page, externalLink);
     });
 
-    test('Find the new External Link in the table', async () => {
+    await test.step('Find the new External Link in the table', async () => {
       await findExternalLink(page, externalLink);
     });
 
-    test('Delete new External Link', async () => {
-      await deleteExternalLink(page);
+    await test.step('Delete the new External Link and verify absence', async () => {
+      await deleteExternalLink(page, externalLink);
+      pendingCleanup.delete(externalLink);
     });
-
   });
-  test.describe('Edit new External Link', () => {
-    const externalLink = `test_edit-${+Date.now()}`;
-    // test('should match the expected title', async () => {
-    //   await checkTitle(page, 'External Link', '.w-full >> .table.table-compact', 'h1.h1');
-    // });
 
-    test('Create External Link', async () => {
+  test('Create, edit, find and delete External Link', async ({ page }, testInfo) => {
+    test.slow();
+    const externalLink = resourceName('test_edit', testInfo);
+    pendingCleanup.add(externalLink);
+
+    await test.step('Create External Link', async () => {
       await createExternalLink(page, externalLink);
     });
 
-    test('Find the new External Link in the table', async () => {
+    await test.step('Find the new External Link in the table', async () => {
       await findExternalLink(page, externalLink);
     });
 
-    test.slow()
-    test('Edit description External Link', async () => {
-      test.slow();
+    await test.step('Edit External Link', async () => {
       await editExternalLink(page, externalLink);
     });
-    test.slow()
-    test('Find the edited External Link in the table', async () => {
+
+    await test.step('Find the edited External Link in the table', async () => {
       await findEditedExternalLink(page, externalLink);
     });
-    test.slow()
-    test('Delete new External Link', async () => {
-      await deleteExternalLink(page);
-    });
 
+    await test.step('Delete the edited External Link and verify absence', async () => {
+      await deleteExternalLink(page, externalLink);
+      pendingCleanup.delete(externalLink);
+    });
   });
 });
-

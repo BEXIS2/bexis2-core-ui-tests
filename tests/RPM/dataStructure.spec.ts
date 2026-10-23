@@ -1,57 +1,80 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-const { checkTitle } = require('./utils/uniqueFunction');
 
-const { navDataStructure, checkConstraint, createDataStructure, findDataStructure, deleteDataStructure, checkAndCloseToast, editDataStructure, findEditedDataStructure, checkDataStructure } = require('./utils/dataStructureFunctions');
+const { navDataStructure, checkConstraint, createDataStructure, findDataStructure, deleteDataStructure, checkAndCloseToast, editDataStructure, findEditedDataStructure, checkDataStructure, cleanupDataStructure } = require('./utils/dataStructureFunctions');
 
-import { login, host } from '../shared';
-
-// Annotate entire file as serial.
-test.describe.configure({ mode: 'serial' });
+import { gotoApp, login } from '../shared';
 
 test.describe('Data Structure', () => {
   // Declare page outside of the test hooks so it's accessible by all tests.
   let page: Page;
+  const iterationDataStructure = `test_iterate-${Date.now()}`;
+  const newDataStructure = `test_new-${Date.now()}`;
+  const editedDataStructure = `test_edit-${Date.now()}`;
 
   test.beforeAll(async ({ browser }) => {
+    test.setTimeout(60_000);
     page = await browser.newPage(); // Create new page
     await login(page); // Login
-    await page.goto(`${host}/rpm/datastructure`); // Go to Data Structure page
+    await gotoApp(page, '/rpm/datastructure', '#create');
   });
 
-  test.afterAll(async () => {
-    await page.close(); // Close the page after all tests
+  test.beforeEach(async () => {
+    await gotoApp(page, '/rpm/datastructure', '#create');
+  });
+
+  test.afterAll(async ({ browser }, testInfo) => {
+    testInfo.setTimeout(120_000);
+    const cleanupErrors: string[] = [];
+    let cleanupPage: Page | undefined;
+
+    try {
+      cleanupPage = await browser.newPage();
+      await login(cleanupPage);
+
+      for (const name of [newDataStructure, editedDataStructure]) {
+        try {
+          await cleanupDataStructure(cleanupPage, name);
+        } catch (error) {
+          cleanupErrors.push(`${name}: ${error}`);
+        }
+      }
+    } catch (error) {
+      cleanupErrors.push(`cleanup setup: ${error}`);
+    } finally {
+      if (cleanupPage && !cleanupPage.isClosed()) {
+        await cleanupPage.close();
+      }
+      if (page && !page.isClosed()) {
+        await page.close();
+      }
+    }
+
+    expect(cleanupErrors, cleanupErrors.join('\n')).toEqual([]);
   });
 
   test.describe('Iterations for fields validation', () => {
-    const dataStructure = `test_iterate-${+Date.now()}`;
-
     test('Check with title and title description field ', async () => {
-      await checkDataStructure(page, dataStructure, "Test data structure", "", "", "", "", "", "");
+      await checkDataStructure(page, iterationDataStructure, "Test data structure", "", "", "", "", "", "");
     });
 
     test('Check with title, title description and hasPrimaryKey field', async () => {
-      await navDataStructure(page);
-      await checkDataStructure(page, dataStructure, "Test data structure", "hasPrimaryKey", "", "", "", "", "");
+      await checkDataStructure(page, iterationDataStructure, "Test data structure", "hasPrimaryKey", "", "", "", "", "");
     });
 
     test('Check with title, title description and hasOptionalValue field', async () => {
-      await navDataStructure(page);
-      await checkDataStructure(page, dataStructure, "Test data structure", "", "hasOptionalValue", "", "", "", "");
+      await checkDataStructure(page, iterationDataStructure, "Test data structure", "", "hasOptionalValue", "", "", "", "");
     });
 
     test('Check with title, title description, name, description and hasPrimaryKey field', async () => {
-      await navDataStructure(page);
-      await checkDataStructure(page, dataStructure, "Test data structure", "hasPrimaryKey", "", dataStructure, "Test data structure", "", "");
+      await checkDataStructure(page, iterationDataStructure, "Test data structure", "hasPrimaryKey", "", iterationDataStructure, "Test data structure", "", "");
     });
     test('Check with title, title description, name, description and hasOptionalValue field', async () => {
-      await navDataStructure(page);
-      await checkDataStructure(page, dataStructure, "Test data structure", "", "hasOptionalValue", dataStructure, "Test data structure", "", "");
+      await checkDataStructure(page, iterationDataStructure, "Test data structure", "", "hasOptionalValue", iterationDataStructure, "Test data structure", "", "");
     });
 
     test('Check with title, title description, name, description, hasPrimaryKey, hasOptionalValue and hasDataType field', async () => {
-      await navDataStructure(page);
-      await checkDataStructure(page, dataStructure, "Test data structure", "hasPrimaryKey", "hasOptionalValue", dataStructure, "Test data structure", "hasDataType", "");
+      await checkDataStructure(page, iterationDataStructure, "Test data structure", "hasPrimaryKey", "hasOptionalValue", iterationDataStructure, "Test data structure", "hasDataType", "");
       // await findDataStructure(page, dataStructure);
       // await deleteDataStructure(page);
       // await checkAndCloseToast(page);
@@ -61,15 +84,13 @@ test.describe('Data Structure', () => {
     });
 
     test('Check with title, title description, name, description, hasPrimaryKey, hasOptionalValue and hasUnit field', async () => {
-      await navDataStructure(page);
-      await checkDataStructure(page, dataStructure, "Test data structure", "hasPrimaryKey", "hasOptionalValue", dataStructure, "Test data structure", "", "hasUnit");
+      await checkDataStructure(page, iterationDataStructure, "Test data structure", "hasPrimaryKey", "hasOptionalValue", iterationDataStructure, "Test data structure", "", "hasUnit");
     });
 
 
   });
 
   test.describe('Create new data structure', () => {
-    const dataStructure = `test_new-${+Date.now()}`;
     //   // test('should match the expected title', async () => {
     //   await checkTitle(page, 'Data structure', '.w-full >> .table.table-compact', 'h1.h1');
     // });
@@ -79,26 +100,26 @@ test.describe('Data Structure', () => {
       await navDataStructure(page);
     });
 
-    test('Create data structure', async () => {
-      await createDataStructure(page, dataStructure);
-    });
-    //test.slow()
-    test('Find the new data structure in the table', async () => {
-      await findDataStructure(page, dataStructure);
-    });
+    test('Create, find and delete data structure', async () => {
+      test.slow();
 
-    test('Delete new data structure', async () => {
-      await deleteDataStructure(page);
-    });
-
-    test('Check toast', async () => {
-      await checkAndCloseToast(page);
+      await test.step('Create data structure', async () => {
+        await createDataStructure(page, newDataStructure);
+      });
+      await test.step('Find the new data structure in the table', async () => {
+        await findDataStructure(page, newDataStructure);
+      });
+      await test.step('Delete new data structure', async () => {
+        await deleteDataStructure(page, newDataStructure);
+      });
+      await test.step('Check toast', async () => {
+        await checkAndCloseToast(page, newDataStructure);
+      });
     });
 
   });
 
   test.describe('Edit new data structure', () => {
-    const dataStructure = `test_edit-${+Date.now()}`;
 
 
     test('Check Constraint', async () => {
@@ -108,28 +129,27 @@ test.describe('Data Structure', () => {
     });
 
 
-    test('Create data structure', async () => {
-      await createDataStructure(page, dataStructure);
-    });
-    //test.slow()
-    test('Find the new data structure in the table', async () => {
-      await findDataStructure(page, dataStructure);
-    });
-    test('Edit description data structure', async () => {
+    test('Create, edit, find and delete data structure', async () => {
       test.slow();
-      await editDataStructure(page);
-    });
 
-    test('Find the edited data structure in the table', async () => {
-      await findEditedDataStructure(page, dataStructure);
-    });
-
-    test('Delete new data structure', async () => {
-      await deleteDataStructure(page);
-    });
-
-    test('Check toast', async () => {
-      await checkAndCloseToast(page);
+      await test.step('Create data structure', async () => {
+        await createDataStructure(page, editedDataStructure);
+      });
+      await test.step('Find the new data structure in the table', async () => {
+        await findDataStructure(page, editedDataStructure);
+      });
+      await test.step('Edit description data structure', async () => {
+        await editDataStructure(page, editedDataStructure);
+      });
+      await test.step('Find the edited data structure in the table', async () => {
+        await findEditedDataStructure(page, editedDataStructure);
+      });
+      await test.step('Delete edited data structure', async () => {
+        await deleteDataStructure(page, editedDataStructure);
+      });
+      await test.step('Check toast', async () => {
+        await checkAndCloseToast(page, editedDataStructure);
+      });
     });
 
   });

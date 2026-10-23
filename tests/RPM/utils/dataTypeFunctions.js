@@ -54,7 +54,7 @@ async function checkDataTypes(page, dataType, hasDescription, hasSystemType) {
         await page.waitForTimeout(1500);
 
         // Check if the save button is enable and reload the page
-        const saveButton = page.locator('button#save').click();
+        await page.locator('button#save').click();
         await page.waitForSelector('.toast[data-testid=toast] .text-base');
         const toast = await page.locator('.toast[data-testid=toast]');
 

@@ -1,77 +1,62 @@
-import { test, expect } from '@playwright/test';
-class ConstraintHandler {
-    constructor() {
-        this._constraintDelete = false;
-    }
+import { expect } from '@playwright/test';
+import { searchNamedTable } from './tableAssertions';
+import { expectAndDismissToast } from './toastAssertions';
 
-    // Getter
-    get constraintDelete() {
-        return this._constraintDelete;
-    }
+async function checkTitle(page, expectedTitle) {
+    const title = page.getByRole('heading', {
+        name: expectedTitle,
+        exact: true,
+    });
 
-    // Setter
-    set constraintDelete(value) {
-        this._constraintDelete = value;
-    }
+    await expect(title).toBeVisible();
 }
 
-// Usage
-const handler = new ConstraintHandler();
-
-async function checkTitle(page, expectedTitle, parentSelector, titleSelector) {
-    // Wait for the title element to be visible
-    await page.waitForSelector(parentSelector, { state: 'visible' });
-
-    // Locate the title directly without using a parent locator
-    const parent = await page.locator(parentSelector);
-
-    // Wait for the title element to be visible
-    await page.waitForSelector(titleSelector, { state: 'visible' });
-
-    // Locate the title directly without using a parent locator
-    const title = await page.locator(titleSelector);
-
-    await expect(title).toHaveText(expectedTitle);
+async function searchConstraint(page, constraint) {
+    return searchNamedTable(page, {
+        tableId: 'constraints',
+        listPath: '/rpm/constraints/GetConstraints',
+        name: constraint,
+    });
 }
 
-async function deleteConstraint(page, constraint) {
-    await page.waitForLoadState('load');
-    // Wait for 500 milliseconds
-    await page.waitForTimeout(500);
-    // Search for the constraint
-    await page.locator('#constraints-search').fill(constraint);
-    // Click on the Search button
-    await page.click('#constraints-searchSubmit');
-    // Click on the delete button
-    await page.locator('[id^=delete-]').click();
+async function deleteConstraint(page, constraint, allowMissing = false, verifyCopy = false) {
+    const { row } = await searchConstraint(page, constraint);
 
-    // Wait until the modal appears
-    await page.waitForSelector('.modal');
+    if (allowMissing && await row.count() === 0) {
+        return false;
+    }
 
-    // Check the modal title and body text
-    await expect(page.locator('.modal-header')).toHaveText('Delete Constraint');
-    await expect(page.locator('.modal-body')).toHaveText(`Are you sure you wish to delete Constraint "${constraint}?`);
+    await expect(row).toHaveCount(1);
+    await row.locator('[id^=delete-]').click();
+
+    const modal = page.locator('.modal:visible').filter({ hasText: constraint });
+    await expect(modal).toHaveCount(1);
+    await expect(modal).toBeVisible();
+
+    if (verifyCopy) {
+        await expect(modal.locator('.modal-header')).toHaveText('Delete Constraint');
+        const escapedConstraint = constraint.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // RC currently omits the closing quote. Keep the complete confirmation
+        // and exact resource name mandatory while accepting either spelling.
+        await expect(modal.locator('.modal-body')).toHaveText(
+            new RegExp(`^Are you sure you wish to delete Constraint "${escapedConstraint}"?\\?$`)
+        );
+    }
 
     // Click the confirm button in the modal footer
-    await page.locator('.modal-footer button.variant-filled').click();
-    await page.waitForLoadState('load');
+    await modal.locator('.modal-footer button.variant-filled').click();
+    await expect(modal).toBeHidden();
 
-    // Set the value
-    handler.constraintDelete = true;
+    return true;
 }
 async function checkAndCloseToast(page, constraint) {
-    await page.waitForLoadState('load');
-    // Wait for 500 milliseconds
-    await page.waitForTimeout(500);
-    // Wait until the toast appears
-    await page.waitForSelector('.toast[data-testid=toast] .text-base');
+    await expectAndDismissToast(page, `Constraint "${constraint}" deleted.`);
 
-    // Check the toast message
-    const toast = await page.locator('.toast[data-testid=toast]');
-    await expect(await toast.locator('.text-base')).toHaveText(`Constraint "${constraint}" deleted.`);
-
-    // Close the toast
-    await toast.locator('button').click();
+    // Verify the persisted end state instead of trusting the notification alone.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    const { row, noRows } = await searchConstraint(page, constraint);
+    await expect(row).toHaveCount(0);
+    await expect(noRows).toBeVisible();
 }
 
 

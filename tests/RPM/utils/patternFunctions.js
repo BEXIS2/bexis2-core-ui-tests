@@ -1,3 +1,4 @@
+import { expectAndDismissToast } from './toastAssertions';
 import { expect } from '@playwright/test';
 const { checkAndCloseToast, deleteConstraint } = require('./uniqueFunction');
 
@@ -20,7 +21,6 @@ class ConstraintHandler {
 // Usage
 const handler = new ConstraintHandler();
 async function checkPatternConstraint(page, constraint, hasDescription, hasPatternType, hasExpInput) {
-    await page.waitForLoadState('load');
 
     await page.locator('#create').click();
     await page.waitForTimeout(1000);
@@ -50,75 +50,71 @@ async function checkPatternConstraint(page, constraint, hasDescription, hasPatte
 
     // Handling different conditions based on parameters
     if (!constraint && !hasDescription && hasPatternType && !hasExpInput) {
-        await page.waitForLoadState('load');
+
         await page.waitForTimeout(1500);
          // Check if the save button is disabled and reload the page
          const saveButton = page.locator('button#save');
          await expect(saveButton).toBeDisabled();
-         await page.reload();
-         // Set the value
+         await page.reload({ waitUntil: 'domcontentloaded' });
+
          handler.constraintDelete = true;
     }
     else if (constraint && !hasDescription && hasPatternType && !hasExpInput) {
-        await page.waitForLoadState('load');
+
         await page.waitForTimeout(1500);
         // Check if the save button is disabled and reload the page
         const saveButton = page.locator('button#save');
         await expect(saveButton).toBeDisabled();
-        await page.reload();
-        // Set the value
+        await page.reload({ waitUntil: 'domcontentloaded' });
+
         handler.constraintDelete = true;
     }
     else if (!constraint && hasDescription && hasPatternType) {
-        await page.waitForLoadState('load');
+
         await page.waitForTimeout(1500);
         // Check if the save button is disabled and reload the page
         const saveButton = page.locator('button#save');
         await expect(saveButton).toBeDisabled();
-        await page.reload();
-        // Set the value
+        await page.reload({ waitUntil: 'domcontentloaded' });
+
         handler.constraintDelete = true;
     }
     else if (constraint && hasDescription && hasPatternType && !hasExpInput) {
-        await page.waitForLoadState('load');
+
         await page.waitForTimeout(1500);
         // Click on save button and wait for toast message
         await page.click('#save');
-        // Set the value
-        await page.waitForSelector('.toast[data-testid=toast] .text-base');
-        const toast = await page.locator('.toast[data-testid=toast]');
+
         let expectedMessage =
             `Constraint "${constraint}" saved.`;
 
-        await expect(await toast.locator('.text-base')).toHaveText(expectedMessage);
-        await toast.locator('button').click(); // Close the toast
+        await expectAndDismissToast(page, expectedMessage);
+
         handler.constraintDelete = true;
-        await page.reload();
-        //  await page.reload();
-        await deleteConstraint(page, constraint);
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        //  await page.reload({ waitUntil: 'domcontentloaded' });
+        await deleteConstraint(page, constraint, false, false);
         await checkAndCloseToast(page, constraint);
     }
     else if (!constraint && !hasDescription && hasPatternType && hasExpInput) {
-        await page.waitForLoadState('load');
+
         await page.waitForTimeout(1500);
      // Click on save button and wait for toast message
      await page.click('#save');
-     // Set the value
-     await page.waitForSelector('.toast[data-testid=toast] .text-base');
-     const toast = await page.locator('.toast[data-testid=toast]');
+
      let  expectedMessage = "Can't save Constraint \"null\" .Name is Null or Empty";
 
-     await expect(await toast.locator('.text-base')).toHaveText(expectedMessage);
-     await toast.locator('button').click(); // Close the toast
+     await expectAndDismissToast(page, expectedMessage);
+
      handler.constraintDelete = true;
-     await page.reload();
+     await page.reload({ waitUntil: 'domcontentloaded' });
    
     }
 }
 
 async function createPatternConstraint(page, constraint) {
-    await page.reload()
-    await page.waitForLoadState('load');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+
     // Click on the create button
     await page.locator('#create').click();
     // Wait for 500 milliseconds
@@ -140,14 +136,9 @@ async function createPatternConstraint(page, constraint) {
     await page.waitForTimeout(500); // waits for 500 milliseconds
     // Click on save button
     await page.click('#save');
-    // Wait until the toast appears
-    await page.waitForSelector('.toast[data-testid=toast] .text-base');
-    // Check the toast message
-    const toast = await page.locator('.toast[data-testid=toast]');
-    await expect(await toast.locator('.text-base')).toHaveText(
-        `Constraint "${constraint}" saved.`
-    );
-    await toast.locator('button').click(); // Close the toast
+
+    await expectAndDismissToast(page, `Constraint "${constraint}" saved.`);
+
 }
 
 async function findPatternConstraint(page, constraint) {
@@ -174,7 +165,7 @@ async function findPatternConstraint(page, constraint) {
 }
 
 async function editPatternDescription(page, constraint) {
-    await page.waitForLoadState('load');
+
     await page
         .locator('textarea[id=description]')
         .fill('Test constraint edited');
@@ -191,14 +182,9 @@ async function editPatternDescription(page, constraint) {
     await page.click('#example');
     await page.type('#example', 'Hello, I am updated Tester');
     await page.locator('button[id=save]').click();
-    // Wait until the toast appears
-    await page.waitForSelector('.toast[data-testid=toast] .text-base');
-    // Check the toast message
-    const toast = await page.locator('.toast[data-testid=toast]');
-    await expect(await toast.locator('.text-base')).toHaveText(
-        `Constraint "${constraint}" saved.`
-    );
-    await toast.locator('button').click(); // Close the toast
+
+    await expectAndDismissToast(page, `Constraint "${constraint}" saved.`);
+
 }
 
 async function findEditedPatternConstraint(page, constraint) {

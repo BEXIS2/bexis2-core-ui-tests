@@ -5,31 +5,81 @@ const { checkTitle } = require('./utils/uniqueFunction');
 const { checkDataTypes, createDataType, findDataType, deleteDataType, checkAndCloseToast, editDataTypeDescription, findEditedDataType } = require('./utils/dataTypeFunctions');
 
 
-import { login, host } from '../shared';
-
-// Annotate entire file as serial.
-test.describe.configure({ mode: 'serial' });
+import { gotoApp, login } from '../shared';
 
 test.describe('Data Types', () => {
     // Declare page outside of the test hooks so it's accessible by all tests.
     let page: Page;
+    const dataTypeNew = `test_new-${+Date.now()}`;
+    const dataTypeEdit = `test_edit-${+Date.now()}`;
+
+    async function deleteDataTypeIfPresent(cleanupPage: Page, dataType: string) {
+        await gotoApp(cleanupPage, '/rpm/datatype/', '#create');
+        await cleanupPage.locator('#dataTypes-search').fill(dataType);
+        await cleanupPage.locator('#dataTypes-searchSubmit').click();
+
+        const row = cleanupPage.locator('[id^=dataTypes-row-]').filter({
+            has: cleanupPage.getByText(dataType, { exact: true }),
+        });
+        const emptyTable = cleanupPage.getByText('No rows available', { exact: true });
+
+        await expect.poll(async () => {
+            const matches = await row.count();
+            const isEmpty = await emptyTable.isVisible();
+            return matches === 1 || (matches === 0 && isEmpty);
+        }, { timeout: 10_000 }).toBe(true);
+
+        if (await row.count() === 0) {
+            return;
+        }
+
+        await expect(row).toHaveCount(1);
+        await deleteDataType(cleanupPage, dataType);
+        await checkAndCloseToast(cleanupPage, dataType);
+    }
 
     test.beforeAll(async ({ browser }) => {
         page = await browser.newPage(); // Create new page
         await login(page); // Login
-        await page.goto(`${host}/rpm/datatype/`); // Go to Data Types Manager page
+        await gotoApp(page, '/rpm/datatype/', '#create');
     });
 
-    test.afterAll(async () => {
-        await page.close(); // Close the page after all tests
+    test.beforeEach(async () => {
+        await gotoApp(page, '/rpm/datatype/', '#create');
+    });
+
+    test.afterAll(async ({ browser }, testInfo) => {
+        testInfo.setTimeout(120_000);
+        const cleanupErrors: string[] = [];
+        let cleanupPage: Page | undefined;
+
+        try {
+            cleanupPage = await browser.newPage();
+            await login(cleanupPage);
+
+            for (const dataType of [dataTypeNew, dataTypeEdit]) {
+                try {
+                    await deleteDataTypeIfPresent(cleanupPage, dataType);
+                } catch (error) {
+                    cleanupErrors.push(`${dataType}: ${error}`);
+                }
+            }
+        } catch (error) {
+            cleanupErrors.push(`cleanup setup: ${error}`);
+        } finally {
+            if (cleanupPage && !cleanupPage.isClosed()) {
+                await cleanupPage.close();
+            }
+            if (page && !page.isClosed()) {
+                await page.close();
+            }
+        }
+
+        expect(cleanupErrors, cleanupErrors.join('\n')).toEqual([]);
     });
     test.slow();
     test('Title', async () => {
-        // Check the title of the table
-        const title = await page
-            .locator('.w-full', { has: page.locator('.table.table-compact') })
-            .locator('h1');
-        await expect(title).toHaveText('Data Types');
+        await checkTitle(page, 'Data Types');
     });
 
     // Unique name for the data type
@@ -68,67 +118,57 @@ test.describe('Data Types', () => {
     });
     test.slow();
     test.describe('Create new data type', () => {
-        const dataType = `test_new-${+Date.now()}`;
-        test('should match the expected title', async () => {
-            await checkTitle(page, 'Data Types', '.w-full >> .table.table-compact', 'h1.h1');
-        });
+        test('Create, find and delete data type', async () => {
+            test.slow();
 
-        test('Create data type', async () => {
-            await createDataType(page, dataType, "Empty");
+            await test.step('Check title', async () => {
+                await checkTitle(page, 'Data Types');
+            });
+            await test.step('Create data type', async () => {
+                await createDataType(page, dataTypeNew, "Empty");
+            });
+            await test.step('Find the new data type in the table', async () => {
+                await findDataType(page, dataTypeNew);
+            });
+            await test.step('Delete new data type', async () => {
+                await deleteDataType(page, dataTypeNew);
+            });
+            await test.step('Check toast', async () => {
+                await checkAndCloseToast(page, dataTypeNew);
+            });
         });
-        //test.slow()
-        test('Find the new data type in the table', async () => {
-            await findDataType(page, dataType);
-        });
-
-        test('Delete new data type', async () => {
-            await deleteDataType(page, dataType);
-        });
-
-        test('Check toast', async () => {
-            await checkAndCloseToast(page, dataType);
-        });
-
     });
     test.describe('Edit new data type', () => {
-        const dataType = `test_edit-${+Date.now()}`;
-        test('should match the expected title', async () => {
-            await checkTitle(page, 'Data Types', '.w-full >> .table.table-compact', 'h1.h1');
-        });
-
-        test('Create data type', async () => {
-            await createDataType(page, dataType, "Empty");
-        });
-
-        test('Find the new data type in the table', async () => {
-            await findDataType(page, dataType);
-        });
-
-        // Check the title
-        test('Title', async () => {
-            await page.locator('[id^=edit-]').click(); // Click on the edit button
-
-            const title = await page
-                .locator('.w-full', { has: page.locator('.table.table-compact') })
-                .locator('div.h3');
-            await expect(title).toHaveText(dataType);
-        });
-        test('Edit description data type', async () => {
+        test('Create, edit, find and delete data type', async () => {
             test.slow();
-            await editDataTypeDescription(page, dataType);
-        });
 
-        test('Find the edited data type in the table', async () => {
-            await findEditedDataType(page, dataType);
+            await test.step('Check title', async () => {
+                await checkTitle(page, 'Data Types');
+            });
+            await test.step('Create data type', async () => {
+                await createDataType(page, dataTypeEdit, "Empty");
+            });
+            await test.step('Find the new data type in the table', async () => {
+                await findDataType(page, dataTypeEdit);
+            });
+            await test.step('Open data type editor and check title', async () => {
+                await page.locator('[id^=edit-]').click();
+                const title = page.locator('div.h3').filter({ hasText: dataTypeEdit });
+                await expect(title).toBeVisible();
+                await expect(title).toHaveText(dataTypeEdit);
+            });
+            await test.step('Edit description data type', async () => {
+                await editDataTypeDescription(page, dataTypeEdit);
+            });
+            await test.step('Find the edited data type in the table', async () => {
+                await findEditedDataType(page, dataTypeEdit);
+            });
+            await test.step('Delete edited data type', async () => {
+                await deleteDataType(page, dataTypeEdit);
+            });
+            await test.step('Check toast', async () => {
+                await checkAndCloseToast(page, dataTypeEdit);
+            });
         });
-
-        test('Delete new data type', async () => {
-            await deleteDataType(page, dataType);
-        });
-
-        test('Check toast', async () => {
-            await checkAndCloseToast(page, dataType);
-        });
-
     });
 });

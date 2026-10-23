@@ -1,14 +1,13 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-import { login, host } from '../shared';
+import { login } from '../shared';
 
-test.describe.configure({ mode: 'serial' });
-
-test.describe('Variable Template Structure', () => {
+test.describe('Variable Template Manager', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
+    test.setTimeout(60_000);
     page = await browser.newPage();
     await login(page);
 
@@ -18,8 +17,8 @@ test.describe('Variable Template Structure', () => {
     await page.close();
   });
 
-  test.describe('Create new Variable Template', () => {
-    test('create form', async () => {
+  test.describe('Create form', () => {
+    test('selects a unit without saving an incomplete template', async () => {
 
       // Click on setting icon
       await page.locator('#menu-settings').click();
@@ -32,29 +31,19 @@ test.describe('Variable Template Structure', () => {
       await page.click('#create');
 
       // Click on name field and type test data
-      await page.click('#name');
-      // await page.click('#create'); // sometimes the click on the create button is not working, so added this click to make sure that the name field is focused before typing.
-      await page.type('#name', 'ummaima');
+      await page.locator('#name').fill(`ui-variable-template-${Date.now()}`);
 
 
       // Click on description field and type test data
-      await page.click('#description');
-      await page.type('#description', 'Test');
+      await page.locator('#description').fill('Test');
 
       await page.fill('#unit', 'kg');
-      page.waitForTimeout(10000); // Wait for 10 seconds
-
-      // Wait for the dropdown options to be visible. 
-      // await page.waitForSelector('.svelte-select-list svelte-82qwg8');
-
-      // Click on the option with the text 'kg/kg'. 
-      await page.click('text=kg/kg');
+      const unitOption = page.getByText('kg/kg', { exact: true });
+      await expect(unitOption).toBeVisible();
+      await unitOption.click();
+      await expect(page.locator('#unit').locator('xpath=..')).toContainText('kg/kg');
+      await expect(page.locator('#save')).toBeDisabled();
 
     });
   });
 });
-
-
-
-
-

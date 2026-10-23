@@ -3,23 +3,51 @@ import type { Page } from '@playwright/test';
 const { checkTitle, checkAndCloseToast, deleteConstraint } = require('./utils/uniqueFunction');
 const { checkDomainConstraint, createDomainConstraint, findDomainConstraint, findEditedDomainConstraint, editDomainDescription } = require('./utils/domainFunctions');
 
-import { login, host } from '../shared';
-
-// Annotate entire file as serial.
-test.describe.configure({ mode: 'serial' });
+import { gotoApp, login } from '../shared';
 
 test.describe('Create Domain Constraint', () => {
     let page: Page;
+    const newConstraint = `test_new-${Date.now()}`;
+    const editedConstraint = `test_edit-${Date.now()}`;
+    const validationConstraint = `test_iterate-${Date.now()}`;
 
     test.beforeAll(async ({ browser }) => {
+        test.setTimeout(60_000);
         page = await browser.newPage();
         await login(page);
-        await page.goto(`${host}/rpm/constraints/`);
     });
 
-    test.afterAll(async () => {
-        // await deleteConstraint(expect, page, constraint);
-        await page.close();
+    test.beforeEach(async () => {
+        await gotoApp(page, '/rpm/constraints/', '#create');
+    });
+
+    test.afterAll(async ({ browser }) => {
+        test.setTimeout(120_000);
+        const cleanupErrors: string[] = [];
+        const cleanupPage = await browser.newPage();
+
+        try {
+            await login(cleanupPage);
+            for (const constraint of [validationConstraint, newConstraint, editedConstraint]) {
+                try {
+                    await gotoApp(cleanupPage, '/rpm/constraints/', '#create');
+                    if (await deleteConstraint(cleanupPage, constraint, true, false)) {
+                        await checkAndCloseToast(cleanupPage, constraint);
+                    }
+                } catch (error) {
+                    cleanupErrors.push(`${constraint}: ${error}`);
+                }
+            }
+        } catch (error) {
+            cleanupErrors.push(`setup: ${error}`);
+        } finally {
+            await cleanupPage.close();
+            if (page && !page.isClosed()) await page.close();
+        }
+
+        if (cleanupErrors.length > 0) {
+            throw new Error(`Domain-constraint cleanup failed:\n${cleanupErrors.join('\n')}`);
+        }
     });
 
     // test.afterEach(async ({ page }) => {
@@ -31,7 +59,6 @@ test.describe('Create Domain Constraint', () => {
     //});
 
     test.describe('Iterations for fields validation', () => {
-        const constraint = `test_iterate-${+Date.now()}`;
         test('Check title ', async () => {
             //Check with title name
             await checkTitle(page, 'Constraints', '.w-full >> .table.table-compact', 'h1.h1');
@@ -41,7 +68,7 @@ test.describe('Create Domain Constraint', () => {
         });
 
         test('Check with only constraint name and domain type ', async () => {
-            await checkDomainConstraint(page, constraint, "", "Domain", "")
+            await checkDomainConstraint(page, validationConstraint, "", "Domain", "")
         });
         test('Check with only description and domain type ', async () => {
             await checkDomainConstraint(page, "", "Test Contraint", "Domain", "")
@@ -52,74 +79,55 @@ test.describe('Create Domain Constraint', () => {
         });
 
         test('Check with name description and constraint domain type ', async () => {
-            await checkDomainConstraint(page, constraint, "Test Contraint", "Domain", "")
+            await checkDomainConstraint(page, validationConstraint, "Test Contraint", "Domain", "")
         });
 
     });
 
     test.describe('Create new Constraints', () => {
-        const constraint = `test_new-${+Date.now()}`;
-        test('should match the expected title', async () => {
-            await checkTitle(page, 'Constraints', '.w-full >> .table.table-compact', 'h1.h1');
-        });
-
-        test('Create Domain Constraint', async () => {
-            await createDomainConstraint(page, constraint);
-        });
-
-        test('Find the new constraint in the table', async () => {
-            await findDomainConstraint(page, constraint);
-        });
-
-        test('Delete new constraint', async () => {
-            await deleteConstraint(page, constraint);
-        });
-
-        test('Check toast', async () => {
-            await checkAndCloseToast(page, constraint);
+        test('creates, finds and deletes a domain constraint', async () => {
+            await test.step('Check title', async () => {
+                await checkTitle(page, 'Constraints');
+            });
+            await test.step('Create constraint', async () => {
+                await createDomainConstraint(page, newConstraint);
+            });
+            await test.step('Find constraint', async () => {
+                await findDomainConstraint(page, newConstraint);
+            });
+            await test.step('Verify complete delete confirmation and delete constraint', async () => {
+                await deleteConstraint(page, newConstraint, false, true);
+                await checkAndCloseToast(page, newConstraint);
+            });
         });
 
     });
 
     test.describe('Edit new Domain constraint', () => {
-        const constraint = `test_edit-${+Date.now()}`;
-        test('should match the expected title', async () => {
-            await checkTitle(page, 'Constraints', '.w-full >> .table.table-compact', 'h1.h1');
-        });
-
-        test('Create Domain Constraint', async () => {
-            await createDomainConstraint(page, constraint);
-        });
-
-        test('Find the new constraint in the table', async () => {
-            await findDomainConstraint(page, constraint);
-
-        });
-
-        // Check the title
-        test('Title', async () => {
-            await page.locator('[id^=edit-]').click(); // Click on the edit button
-
-            const title = await page
-                .locator('.w-full', { has: page.locator('.table.table-compact') })
-                .locator('div.h3');
-            await expect(title).toHaveText(constraint);
-        });
-        test('Edit description domain', async () => {
+        test('creates, edits, finds and deletes a domain constraint', async () => {
             test.slow();
-            await editDomainDescription(page, constraint);
-        });
-
-        test('Find the edited constraint in the table', async () => {
-            await findEditedDomainConstraint(page, constraint);
-        });
-
-        test('Delete new constraint', async () => {
-            await deleteConstraint(page, constraint);
-        });
-
-        test('Check toast', async () => {
-            await checkAndCloseToast(page, constraint);
+            await test.step('Check title', async () => {
+                await checkTitle(page, 'Constraints');
+            });
+            await test.step('Create and find constraint', async () => {
+                await createDomainConstraint(page, editedConstraint);
+                await findDomainConstraint(page, editedConstraint);
+            });
+            await test.step('Open and verify edit form', async () => {
+                await page.locator('[id^=edit-]').click();
+                const title = page
+                    .locator('.w-full', { has: page.locator('.table.table-compact') })
+                    .locator('div.h3');
+                await expect(title).toHaveText(editedConstraint);
+            });
+            await test.step('Edit and verify constraint', async () => {
+                await editDomainDescription(page, editedConstraint);
+                await findEditedDomainConstraint(page, editedConstraint);
+            });
+            await test.step('Delete constraint', async () => {
+                await deleteConstraint(page, editedConstraint, false, false);
+                await checkAndCloseToast(page, editedConstraint);
+            });
         });
 
     });
